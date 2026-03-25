@@ -14,71 +14,58 @@ class ForgotPasswordController extends Controller
         return view('backend.auth.forgotPassword');
     }
 
-    // STEP 1: Send OTP
+
     public function sendOtp(Request $request)
     {
-        $request->validate([
-            'email' => 'required|email'
-        ]);
-
         $user = User::where('email', $request->email)->first();
 
-        if (!$user || !in_array($user->role, ['director', 'operator', 'principal', 'hod'])) {
-            return back()->with('error', 'Invalid Admin Email');
+        if (!$user) {
+            return response()->json(['status' => false, 'message' => 'Invalid Email']);
         }
 
-        // Generate OTP
         $otp = rand(100000, 999999);
 
         $user->otp = $otp;
         $user->otp_expires_at = now()->addMinutes(5);
         $user->save();
 
-        // Show OTP on screen (as per your requirement)
-        return back()->with([
-            'success' => 'OTP Generated Successfully',
-            'otp' => $otp,
-            'email' => $user->email
+        return response()->json([
+            'status' => true,
+            'message' => 'OTP Sent',
+            'otp' => $otp, 
         ]);
     }
 
-    // STEP 2: Reset Password
+
+    public function verifyOtp(Request $request)
+    {
+        $user = User::where('email', $request->email)->first();
+
+        if (!$user || $user->otp != $request->otp) {
+            return response()->json(['status' => false, 'message' => 'Invalid OTP']);
+        }
+
+        if (now()->gt($user->otp_expires_at)) {
+            return response()->json(['status' => false, 'message' => 'OTP Expired']);
+        }
+
+        return response()->json(['status' => true]);
+    }
+
+
     public function resetPassword(Request $request)
     {
         $request->validate([
-            'email' => 'required|email',
-            'otp' => 'required',
             'password' => 'required|min:6|confirmed'
-        ], [
-            'password.confirmed' => 'New Password and Confirm Password does not match !!'
         ]);
 
         $user = User::where('email', $request->email)->first();
 
-        if (!$user) {
-            return back()->with('error', 'User not found')->withInput();
-        }
-
-        // Check OTP
-        if ($user->otp != $request->otp) {
-            return back()->with('error', 'Invalid OTP')->withInput();
-        }
-
-        // Check expiry
-        if (!$user->otp_expires_at || now()->gt($user->otp_expires_at)) {
-            $user->otp = null;
-            $user->otp_expires_at = null;
-            $user->save();
-
-            return back()->with('error', 'Your OTP is expired.')->withInput();
-        }
-
-        // Update password
         $user->password = Hash::make($request->password);
         $user->otp = null;
         $user->otp_expires_at = null;
         $user->save();
 
-        return redirect()->route('admin.login')->with('success', 'Password Reset Successfully');
+        return response()->json(['status' => true, 'message' => 'Password Reset Successful','redirect' => route('admin.login')]);
     }
 }

@@ -27,6 +27,7 @@ Route::post('/admin/logout', [AuthController::class, 'logout'])->name('admin.log
 //forget password
 Route::get('/admin/forgot-password', [ForgotPasswordController::class, 'showForm'])->name('admin.forgot');
 Route::post('/admin/send-otp', [ForgotPasswordController::class, 'sendOtp'])->name('admin.send.otp');
+Route::post('/admin/verify-otp', [ForgotPasswordController::class, 'verifyOtp']);
 Route::post('/admin/reset-password', [ForgotPasswordController::class, 'resetPassword'])->name('admin.reset.password');
 
 Route::get('/admin/login/refresh_captcha', [AuthController::class, 'refreshCaptcha'])->name('refresh_captcha');

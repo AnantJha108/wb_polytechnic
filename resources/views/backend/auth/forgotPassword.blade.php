@@ -37,7 +37,7 @@
             <input type="text" id="otp" class="form-control mb-2" placeholder="Enter OTP">
 
             <button id="verifyOtp" class="btn btn-success">Verify OTP</button>
-            <button id="resendOtp" class="btn btn-warning">Resend OTP</button>
+            <button id="resendOtp" class="btn btn-warning ms-4">Resend OTP</button>
         </div>
 
         {{-- PASSWORD --}}
