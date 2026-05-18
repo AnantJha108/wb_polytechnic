@@ -19,11 +19,25 @@ class User extends Authenticatable
      * @var list<string>
      */
     protected $fillable = [
-        'name',
+        'username',
+        'phone',
         'email',
         'password',
         'role',
+        'login_attempts',
+        'locked_until'
     ];
+
+
+    public function master()
+    {
+        return $this->belongsTo(Master::class, 'master_id');
+    }
+
+    public function menus()
+    {
+        return $this->belongsToMany(Menu::class, 'menu_user_maps', 'user_id', 'menu_id');
+    }
 
     /**
      * The attributes that should be hidden for serialization.

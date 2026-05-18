@@ -33,21 +33,21 @@
             <h5 class="mt-3">
                 Logged in as:
                 <span class="badge bg-primary text-uppercase">
-                    {{ $user->role }}
+                    {{ $user->master->name}}
                 </span>
             </h5>
 
             {{-- Role-based message --}}
-            @if($user->role == 'director')
+            @if($user->master->name == 'director')
             <p>You are Director. You have full access.</p>
 
-            @elseif($user->role == 'operator')
+            @elseif($user->master->name == 'operator')
             <p>You are Operator. Limited control.</p>
 
-            @elseif($user->role == 'principal')
+            @elseif($user->master->name == 'principal')
             <p>You are Principal.</p>
 
-            @elseif($user->role == 'hod')
+            @elseif($user->master->name == 'hod')
             <p>You are HOD.</p>
             @endif
         </div>

@@ -16,11 +16,18 @@ class AdminMiddleware
      */
     public function handle(Request $request, Closure $next)
     {
-        if (Auth::check() && in_array(Auth::user()->role, ['director','operator','principal','hod'])) {
-            return $next($request);
+        if (Auth::check()) {
+
+            $user = Auth::user();
+
+            // Check if master exists
+            if ($user->master && in_array($user->master->name, ['director', 'operator', 'principal', 'hod']) &&
+                $user->master->status == 1
+            ) {
+                return $next($request);
+            }
         }
 
         return redirect('admin/login')->with('error', 'Unauthorized access');
-        
     }
 }

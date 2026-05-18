@@ -32,25 +32,25 @@
                             @csrf
                             <div class="mb-3 text-start">
                                 <label class="form-label">Username</label>
-                                <input type="text" name="email" class="form-control" placeholder="Enter username"
-                                    required>
+                                <input type="text" name="login" value="{{ old('login') }}" class="form-control"
+                                    placeholder="Enter username" required>
                             </div>
 
                             <div class="mb-3 text-start">
                                 <label class="form-label">Password</label>
-                                <input type="password" name="password" class="form-control" placeholder="Enter password"
-                                    required>
+                                <input type="password" name="password" value="{{ old('password') }}"
+                                    class="form-control" placeholder="Enter password" required>
                             </div>
                             <div class="mb-3 text-start">
                                 <div class="row">
                                     {{-- Display the CAPTCHA image --}}
                                     <div class="col-6">
-                                        <img src="{{ captcha_src() }}"  alt="captcha" width="100%" class="captcha-img">
+                                        <img src="{{ captcha_src() }}" alt="captcha" width="100%" class="captcha-img">
                                     </div>
 
                                     <div class="col-1 text-center">
                                         <button type="button" class="btn btn-outline-primary" id="reload">
-                                              <i class="fa fa-refresh" aria-hidden="true"></i>
+                                            <i class="fa fa-refresh" aria-hidden="true"></i>
                                         </button>
                                     </div>
 

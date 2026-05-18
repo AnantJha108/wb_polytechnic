@@ -36,4 +36,5 @@ Route::get('/admin/login/refresh_captcha', [AuthController::class, 'refreshCaptc
 //admin routes
 Route::middleware(['auth'])->group(function () {
     Route::get('/admin/dashboard', [AdminController::class, 'dashboard'])->name('admin.dashboard');
+    Route::any('/admin/{slug?}/{id?}', [AdminController::class, 'handle']) ->middleware(['auth', 'menu.access']);
 });

@@ -49,16 +49,16 @@
     // SEND OTP
     $('#sendOtp').click(function(){
 
-        let email = $('#email').val();
+        let login = $('#login').val();
 
         $.post('/admin/send-otp', {
-            email: email,
+            login: login,
             _token: '{{ csrf_token() }}'
         }, function(res){
 
             if(res.status){
                 $('#message').html('<div class="alert alert-success">'+res.message+' | OTP: '+res.otp+'</div>');
-                $('#emailDiv').hide();
+                $('#loginDiv').hide();
                 $('#otpDiv').show();
             } else {
                 $('#message').html('<div class="alert alert-danger">'+res.message+'</div>');
@@ -71,7 +71,7 @@
     $('#verifyOtp').click(function(){
 
         $.post('/admin/verify-otp', {
-            email: $('#email').val(),
+            login: $('#login').val(),
             otp: $('#otp').val(),
             _token: '{{ csrf_token() }}'
         }, function(res){
@@ -98,7 +98,7 @@
     $('#resetPassword').click(function(){
 
         $.post('/admin/reset-password', {
-            email: $('#email').val(),
+            login: $('#login').val(),
             password: $('#password').val(),
             password_confirmation: $('#confirmPassword').val(),
             _token: '{{ csrf_token() }}'

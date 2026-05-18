@@ -14,6 +14,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->redirectGuestsTo(fn () => route('admin.login'));
         $middleware->alias([
             'role' => \App\Http\Middleware\AdminMiddleware::class,
+            'menu.access' => \App\Http\Middleware\CheckMenuAccess::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

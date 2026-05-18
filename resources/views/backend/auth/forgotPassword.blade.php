@@ -26,9 +26,8 @@
 
         <div id="message"></div>
 
-        {{-- EMAIL --}}
-        <div id="emailDiv">
-            <input type="email" id="email" class="form-control mb-2" placeholder="Enter Email">
+        <div id="loginDiv">
+            <input type="text" id="login" class="form-control mb-2" placeholder="Enter username">
             <button id="sendOtp" class="btn btn-primary">Send OTP</button>
         </div>
 
@@ -42,12 +41,86 @@
 
         {{-- PASSWORD --}}
         <div id="passwordDiv" style="display:none;">
+            {{-- Error Messages --}}
             <input type="password" id="password" class="form-control mb-2" placeholder="New Password">
+            <div id="passwordErrors" class="text-danger mt-2"></div>
             <input type="password" id="confirmPassword" class="form-control mb-2" placeholder="Confirm Password">
+            <div id="confirmError" class="text-danger mt-2"></div>
 
             <button id="resetPassword" class="btn btn-success">Reset Password</button>
         </div>
 
     </div>
 </div>
+
+<script>
+    $('#password').on('keyup', function () {
+
+    let password = $(this).val();
+
+    let errors = [];
+
+    // Minimum 8 characters
+    if (password.length < 8) {
+        errors.push("• Password must be at least 8 characters");
+    }
+
+    // Capital letter
+    if (!/[A-Z]/.test(password)) {
+        errors.push("• At least 1 Capital Letter required");
+    }
+
+    // Small letter
+    if (!/[a-z]/.test(password)) {
+        errors.push("• At least 1 Small Letter required");
+    }
+
+    // Number
+    if (!/[0-9]/.test(password)) {
+        errors.push("• At least 1 Number required");
+    }
+
+    // Special character
+    if (!/[@$!%*#?&]/.test(password)) {
+        errors.push("• At least 1 Special Character required");
+    }
+
+    // Show errors
+    if (errors.length > 0) {
+
+        $('#passwordErrors').html(errors.join('<br>'));
+
+    } else {
+
+        $('#passwordErrors').html(
+            '<span class="text-success">Strong Password ✓</span>'
+        );
+    }
+
+});
+
+
+/* Confirm Password Match */
+
+$('#confirmPassword').on('keyup', function () {
+
+    let password = $('#password').val();
+    let confirmPassword = $(this).val();
+
+    if (password !== confirmPassword) {
+
+        $('#confirmError').html(
+            '• Password and Confirm Password do not match'
+        );
+
+    } else {
+
+        $('#confirmError').html(
+            '<span class="text-success">Password Matched ✓</span>'
+        );
+    }
+
+});
+
+</script>
 @endsection
