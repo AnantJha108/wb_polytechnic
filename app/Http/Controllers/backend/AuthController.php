@@ -84,17 +84,24 @@ class AuthController extends Controller
             }
         }
 
-        // Check password
         if (!Hash::check($request->password, $user->password)) {
 
             $attempts = ($user->login_attempts ?? 0) + 1;
 
-            //  LOCK ACCOUNT AFTER 3 ATTEMPTS
+            // LOCK AFTER 3 ATTEMPTS
             if ($attempts >= 3) {
 
+                $lockTime = Carbon::now();
+
                 $user->update([
+
                     'login_attempts' => 3,
-                    'locked_until' => Carbon::now()->addMinutes(30)
+
+                    // DISPLAY PURPOSE
+                    'locked_until' => $lockTime->copy()->addMinutes(30),
+
+                    // REAL SECURITY TIMER
+                    'lock_started_at' => $lockTime
                 ]);
 
                 return back()->with(
@@ -104,11 +111,11 @@ class AuthController extends Controller
             }
 
             // UPDATE ATTEMPTS
-            $remaining = 3 - $attempts;
-
             $user->update([
                 'login_attempts' => $attempts
             ]);
+
+            $remaining = 3 - $attempts;
 
             return back()->with(
                 'error',
