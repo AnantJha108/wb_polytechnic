@@ -5,22 +5,44 @@
                 <i class="bi bi-speedometer2 me-2 fs-5"></i>Dashboard
             </a>
         </li> --}}
-        @foreach($menus as $menu)
-        @if(isset($menu->children) && count($menu->children) > 0)
-        <li>
-            <a class="nav-link text-white" data-bs-toggle="collapse" href="#employeeMenu">
-                {{ $menu->name }}
+        @foreach($menus as $parent)
+        <li class="nav-item">
+            <a class="nav-link collapsed text-white" data-bs-target="#menu-{{ $parent->id }}" data-bs-toggle="collapse"
+                href="#">
+                <i class="bi bi-grid me-2"></i>
+                <span>{{ $parent->name }}</span>
+                <i class="bi bi-chevron-down ms-auto"></i>
             </a>
-            @foreach($menu->children as $child)
-            <div class="collapse" id="employeeMenu">
-                <ul class="btn-toggle-nav list-unstyled fw-normal small ps-3">
-                    <li><a href="{{ url('admin/'.$child->slug) }}" class="nav-link text-white"> {{ $child->name }}</a>
-                    </li>
-                </ul>
-            </div>
-            @endforeach
+
+            <ul id="menu-{{ $parent->id }}" class="nav-content collapse list-unstyled ps-3">
+
+                @foreach($parent->children as $child)
+                @php
+                $parts = explode('-', $child->slug, 2);
+                $verb = $parts[0] ?? '';
+                $module = $parts[1] ?? $parts[0];
+
+                $action = match($verb) {
+                'add' => 'create', // shows the empty form (GET)
+                'view' => 'index',
+                'edit' => 'edit',
+                'delete' => 'destroy',
+                default => 'index',
+                };
+
+                $url = url("admin/dashboard/{$module}/{$action}");
+                @endphp
+
+                <li>
+                    <a href="{{ $url }}" class="nav-link text-white py-1">
+                        <i class="bi bi-circle me-2"></i>
+                        <span>{{ $child->name }}</span>
+                    </a>
+                </li>
+                @endforeach
+
+            </ul>
         </li>
-        @endif
         @endforeach
     </ul>
     <hr>

@@ -14,7 +14,6 @@
     <section class="container py-5">
         <div class="row">
             <div class="col-lg-6">
-
                 <h3 class="text-success">
                     Welcome to Acharya Jagadish Chandra Bose Polytechnic
                 </h3>
@@ -30,79 +29,46 @@
                     Training and Placement activities kindly contact to our TPO-
                     tpo(underscore)ajcbp(at)wbscte(dot)ac(dot)in / tpo(dot)ajcbp(at)rediffmail(dot)com
                 </p>
-
             </div>
 
-
             <div class="col-lg-6">
-
                 <div class="row g-3">
-
                     <div class="col-6">
-
                         <div class="card position-relative">
-
-                            <img src="course.jpg" class="card-img">
-
+                            <img src="https://polytechnic.wbtetsd.gov.in/themes/main/images/img1.jpg" class="card-img">
                             <div class="card-overlay">
                                 Courses Offered
                             </div>
-
                         </div>
-
                     </div>
-
-
                     <div class="col-6">
-
                         <div class="card position-relative">
-
-                            <img src="facility.jpg" class="card-img">
-
+                            <img src="https://polytechnic.wbtetsd.gov.in/themes/main/images/img2.jpg" class="card-img">
                             <div class="card-overlay">
                                 Facilities
                             </div>
-
                         </div>
-
                     </div>
-
-
                     <div class="col-6">
-
                         <div class="card position-relative">
-
-                            <img src="admission.jpg" class="card-img">
-
+                            <img src="https://polytechnic.wbtetsd.gov.in/themes/main/images/img3.jpg" class="card-img">
                             <div class="card-overlay">
                                 Admission
                             </div>
-
                         </div>
-
                     </div>
 
-
                     <div class="col-6">
-
                         <div class="card position-relative">
-
-                            <img src="institute.jpg" class="card-img">
-
+                            <img src="https://polytechnic.wbtetsd.gov.in/themes/main/images/img4.jpg" class="card-img">
                             <div class="card-overlay">
                                 Institution
                             </div>
-
                         </div>
-
                     </div>
-
                 </div>
-
             </div>
-
         </div>
-
     </section>
 
 

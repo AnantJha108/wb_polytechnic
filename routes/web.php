@@ -7,18 +7,18 @@ use App\Http\Controllers\frontend\CollegeController;
 use App\Http\Controllers\frontend\FeedbackController;
 use Illuminate\Support\Facades\Route;
 
-Route::get('/',[CollegeController::class,'index']);
+Route::get('/', [CollegeController::class, 'index']);
 
-Route::get('/{slug}',[CollegeController::class,'openCollege']);
+Route::get('/{slug}', [CollegeController::class, 'openCollege']);
 
-Route::get('/about/{slug}',[CollegeController::class,'aboutPage'])->name('poly.about');
-Route::get('/contact/{slug}',[CollegeController::class,'contactPage'])->name('poly.contact');
+Route::get('/about/{slug}', [CollegeController::class, 'aboutPage'])->name('poly.about');
+Route::get('/contact/{slug}', [CollegeController::class, 'contactPage'])->name('poly.contact');
 
-Route::post('/contact/submit-feedback/{slug}', [FeedbackController::class,'store'])->name('feedback.store');
+Route::post('/contact/submit-feedback/{slug}', [FeedbackController::class, 'store'])->name('feedback.store');
 
-Route::match(['get','post'],'/contact/search-feedback/{slug}', [FeedbackController::class,'searchFeedback'])->name('feedback.search');
+Route::match(['get', 'post'], '/contact/search-feedback/{slug}', [FeedbackController::class, 'searchFeedback'])->name('feedback.search');
 
-Route::post('/contact/search-feedback/send-message/{slug}/{ack}', [FeedbackController::class,'sendMessage'])->name('feedback.send');
+Route::post('/contact/search-feedback/send-message/{slug}/{ack}', [FeedbackController::class, 'sendMessage'])->name('feedback.send');
 
 Route::get('/admin/login', [AuthController::class, 'showLogin'])->name('admin.login');
 Route::post('/admin/login', [AuthController::class, 'login'])->name('admin.login.submit');
@@ -35,6 +35,9 @@ Route::get('/admin/login/refresh_captcha', [AuthController::class, 'refreshCaptc
 
 //admin routes
 Route::middleware(['auth'])->group(function () {
-    Route::get('/admin/dashboard', [AdminController::class, 'dashboard'])->name('admin.dashboard');
-    Route::any('/admin/{slug?}/{id?}', [AdminController::class, 'handle']) ->middleware(['auth', 'menu.access']);
+    Route::get('admin/dashboard', [AdminController::class, 'dashboard'])->name('admin.dashboard');
+    // Inside your admin auth middleware group
+    Route::any('admin/dashboard/{path}', [ \App\Http\Controllers\backend\DynamicPageController::class,'handle'])->where('path', '.*');
+    // Route::any('{slug?}/{id?}', [AdminController::class, 'handle'])->middleware(['auth', 'menu.access']);
+
 });

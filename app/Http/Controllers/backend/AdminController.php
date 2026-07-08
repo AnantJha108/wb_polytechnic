@@ -12,7 +12,8 @@ use Illuminate\Support\Facades\Auth;
 
 class AdminController extends Controller
 {
-    public function dashboard(Request $request, $slug = null, $id = null)
+
+    public function getMenus()
     {
         $user = Auth::user();
 
@@ -24,92 +25,36 @@ class AdminController extends Controller
 
         //  If no access → empty sidebar
         if (empty($menuIds)) {
-            $menus = collect();
-        } else {
-
-            // Step 2: Get allowed CHILD menus
-            $childMenus = Menu::whereIn('id', $menuIds)
-                ->where('menu_id', '!=', 0)
-                ->get()
-                ->groupBy('menu_id');
-
-            //  Step 3: Get ONLY parents that have children
-            $menus = Menu::where('menu_id', 0)
-                ->get()
-                ->filter(function ($parent) use ($childMenus) {
-                    return isset($childMenus[$parent->id]);
-                })
-                ->map(function ($parent) use ($childMenus) {
-                    $parent->children = $childMenus[$parent->id];
-                    return $parent;
-                });
+            return collect();
         }
-        return view('backend.admin.dashboard', compact('user','menus'));
+
+        $childMenus = Menu::whereIn('id', $menuIds)
+            ->where('menu_id', '!=', 0)
+            ->get()
+            ->groupBy('menu_id');
+
+        return Menu::where('menu_id', 0)
+            ->get()
+            ->filter(function ($parent) use ($childMenus) {
+                return isset($childMenus[$parent->id]);
+            })
+            ->map(function ($parent) use ($childMenus) {
+                $parent->children = $childMenus[$parent->id];
+                return $parent;
+            });
     }
 
-    public function handle(Request $request, $slug = null, $id = null)
+
+    public function dashboard(Request $request)
     {
-
         $user = Auth::user();
-        
-        $menuIds = DB::table('menu_user_maps')
-            ->where('user_id', $user->id)
-            ->pluck('menu_id')
-            ->toArray();
 
-        if (empty($menuIds)) {
-            $menus = collect();
-        } else {
+        $menus = $this->getMenus();
 
-            $childMenus = Menu::whereIn('id', $menuIds)
-                ->where('menu_id', '!=', 0)
-                ->get()
-                ->groupBy('menu_id');
-
-            $menus = Menu::where('menu_id', 0)
-                ->get()
-                ->filter(function ($parent) use ($childMenus) {
-                    return isset($childMenus[$parent->id]);
-                })
-                ->map(function ($parent) use ($childMenus) {
-                    $parent->children = $childMenus[$parent->id];
-                    return $parent;
-                });
-        }
-
-        if (!$slug) {
-            return view('backend.admin.dashboard', compact('menus'));
-        }
-
-        switch ($slug) {
-
-            case 'add-employee':
-
-                if ($request->isMethod('post')) {
-                    $request->validate([
-                        'name' => 'required',
-                        'email' => 'required|email',
-                        'phone' => 'required'
-                    ]);
-
-                    Employee::create($request->all());
-
-                    return redirect('/admin/view-employee')
-                        ->with('success', 'Employee Added Successfully');
-                }
-
-                return view('backend.admin.addEmployee', compact('menus'));
-
-            case 'view-employee':
-                $employees = Employee::all();
-                return view('backend.admin.viewEmployee', compact('employees', 'menus'));
-
-            case 'employee':
-                $employee = Employee::findOrFail($id);
-                return view('backend.admin.employeeDetails', compact('employee', 'menus'));
-
-            default:
-                abort(404);
-        }
+        return view(
+            'backend.admin.dashboard',
+            compact('user', 'menus')
+        );
     }
+
 }

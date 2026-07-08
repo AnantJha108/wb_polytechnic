@@ -11,7 +11,12 @@ class College extends Model
         'slug',
         'template_id',
         'district',
-        'logo'
+        'logo',
+        'contact_no',
+        'email',
+        'address',
+        'status',
+        'college_id',
     ];
 
     public function template()

@@ -9,7 +9,10 @@ class CollegePage extends Model
     protected $fillable = [
         'college_id',
         'page',
-        'description'
+        'description',
+        'banner',
+        'principle_image',
+        'principle_message',
     ];
 
     public function college()

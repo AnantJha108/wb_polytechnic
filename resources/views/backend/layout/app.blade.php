@@ -26,7 +26,6 @@
     </main>
 
 
-
     <script src="{{ asset('js/app.js') }}"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 </body>
@@ -42,6 +41,38 @@
             }
         });
     });
+</script>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const logoInput  = document.getElementById('logo');
+    const previewBtn = document.getElementById('previewLogoBtn');
+    const previewImg = document.getElementById('logoPreviewImg');
+    let selectedFileURL = null;
+
+    logoInput.addEventListener('change', function () {
+        if (this.files && this.files[0]) {
+            const file = this.files[0];
+
+            if (!file.type.startsWith('image/')) {
+                previewBtn.disabled = true;
+                alert('Please select a valid image file.');
+                this.value = '';
+                return;
+            }
+
+            if (selectedFileURL) {
+                URL.revokeObjectURL(selectedFileURL);
+            }
+
+            selectedFileURL = URL.createObjectURL(file);
+            previewImg.src = selectedFileURL;
+            previewBtn.disabled = false;
+        } else {
+            previewBtn.disabled = true;
+            previewImg.src = '';
+        }
+    });
+});
 </script>
 <script>
     $(document).ready(function(){

@@ -129,7 +129,13 @@
                 <div class="col-md-4">
                     <a href="{{ url($college->slug) }}" class="text-decoration-none text-dark" target="_blank">
                         <div class="college-card">
-                            <img src="https://cdn-icons-png.flaticon.com/512/3135/3135755.png" class="college-logo">
+                            @if($college->logo_url)
+                            <img src="{{ $college->logo_url }}" alt="{{ $college->name }}" width="50" height="50"
+                                class="rounded-circle me-3" style="object-fit: cover;">
+                            @else
+                            <img src="{{ asset('images/default-avatar.png') }}" alt="{{ $college->name }}" width="50"
+                                height="50" class="rounded-circle me-3">
+                            @endif
                             <span>{{ $college->name }}</span>
                         </div>
                     </a>
