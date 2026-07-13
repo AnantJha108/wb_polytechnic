@@ -54,9 +54,11 @@ class CollegeController extends Controller
         $college->logo_url = $this->decryptImage($college->logo);
 
         // Fetch the "home" page content for banner / description / principal message
-        $page = CollegePage::where('college_id', $college->id)
-            ->where('page', 'home')
-            ->first();
+        $page = CollegePage::where([
+            ['college_id', '=', $college->id],
+            ['page', '=', 'home'],
+            ['status', '=', 'approved']
+        ])->first();
 
         $bannerUrl         = null;
         $principleImageUrl = null;
@@ -79,9 +81,10 @@ class CollegeController extends Controller
 
         $college->logo_url = $this->decryptImage($college->logo);
 
-        $page = CollegePage::where('college_id', $college->id)
-            ->where('page', 'about')
-            ->first();
+        $page = CollegePage::where([
+            ['college_id', '=', $college->id],
+            ['page', '=', 'about']
+        ])->first();
 
         $bannerUrl         = null;
         $principleImageUrl = null;
@@ -104,9 +107,11 @@ class CollegeController extends Controller
 
         $college->logo_url = $this->decryptImage($college->logo);
 
-        $page = CollegePage::where('college_id', $college->id)
-            ->where('page', 'contact')
-            ->first();
+        $page = CollegePage::where([
+            ['college_id', '=', $college->id],
+            ['page', '=', 'contact'],
+            ['status', '=', 'approved']
+        ])->first();
 
         $bannerUrl         = null;
         $principleImageUrl = null;

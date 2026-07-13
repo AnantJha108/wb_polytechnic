@@ -1,72 +1,95 @@
 @extends('backend.layout.app')
 
-@section('title', 'Admin Dashboard || College Pages')
+@section('title', 'Admin Dashboard || College Page')
 
 @section('content')
 <div class="row">
     @include('backend.partials.side')
     <div class="col mt-4">
         <div class="d-flex justify-content-between align-items-center mb-3">
-            <h2 class="h4">College Pages</h2>
-            <a href="{{ url('admin/dashboard/collegepage/create') }}" class="btn btn-primary btn-sm">
+            <h2 class="h4">College Page</h2>
+            @if(!$pages->first() || $pages->first()->status === 'rejected')
+            <a href="{{ url('admin/dashboard/collegepage/create') }}" id="addPageBtn" class="btn btn-primary btn-sm">
                 + Add College Page
             </a>
+            @endif
         </div>
 
         @if(session('success'))
-            <p style="color:green">{{ session('success') }}</p>
+
+        <div class="alert alert-success">
+            {{ session('success') }}
+        </div>
+
         @endif
-        @if(session('error'))
-            <p style="color:red">{{ session('error') }}</p>
+
+        <div id="alertBox"></div>
+
+        @if($pages->first() && $pages->first()->status === 'rejected' && $pages->first()->reject_reason)
+        <div class="alert alert-danger" id="reasonBox">
+            <strong>Rejected — Reason:</strong> {{ $pages->first()->reject_reason }}
+        </div>
+        @elseif($pages->first() && $pages->first()->status === 'reverted' && $pages->first()->revert_reason)
+        <div class="alert alert-warning" id="reasonBox">
+            <strong>Reverted — Reason:</strong> {{ $pages->first()->revert_reason }}
+        </div>
         @endif
 
         <div class="table-responsive">
-            <table class="table table-bordered table-striped table-hover align-middle">
+            <table class="table table-bordered table-striped align-middle">
                 <thead class="table-dark">
                     <tr>
                         <th>ID</th>
-                        <th>College</th>
                         <th>Page</th>
-                        <th>Banner</th>
-                        <th>Principal Image</th>
+                        <th>Status</th>
                         <th>Action</th>
                     </tr>
                 </thead>
-                <tbody>
+                <tbody id="pageTableBody">
                     @forelse($pages as $key => $page)
-                    <tr>
+                    <tr data-page-id="{{ $page->id }}">
                         <td>{{ $key + 1 }}</td>
-                        <td>{{ $page->college->name ?? 'N/A' }}</td>
                         <td>{{ $page->page }}</td>
-                        <td>
-                            @if($page->banner_url)
-                                <img src="{{ $page->banner_url }}" width="80" height="50" style="object-fit:cover;">
-                            @else
-                                N/A
-                            @endif
+                        <td class="status-cell">
+                            <span class="badge
+                                @if($page->status == 'draft') bg-secondary
+                                @elseif($page->status == 'forwarded') bg-warning text-dark
+                                @elseif($page->status == 'approved') bg-success
+                                @elseif($page->status == 'rejected') bg-danger
+                                @else bg-info @endif">
+                                {{ ucfirst($page->status) }}
+                            </span>
                         </td>
-                        <td>
-                            @if($page->principle_image_url)
-                                <img src="{{ $page->principle_image_url }}" width="50" height="50" style="object-fit:cover; border-radius:50%;">
-                            @else
-                                N/A
-                            @endif
-                        </td>
-                        <td>
-                            <a href="{{ url('admin/dashboard/collegepage/show/' . $page->id) }}" class="btn btn-sm btn-info">View</a>
-                            <a href="{{ url('admin/dashboard/collegepage/edit/' . $page->id) }}" class="btn btn-sm btn-primary">Edit</a>
+                        <td class="action-cell">
+                            <a href="{{ url('admin/dashboard/collegepage/show/' . $page->id) }}"
+                                class="btn btn-sm btn-info">View</a>
 
-                            <form action="{{ url('admin/dashboard/collegepage/destroy/' . $page->id) }}" method="POST" style="display:inline-block;">
-                                @csrf
-                                @method('DELETE')
+                            @if(in_array($page->status, ['draft', 'reverted']))
+                            <a href="{{ url('admin/dashboard/collegepage/edit/' . $page->id) }}"
+                                class="btn btn-sm btn-primary">Edit</a>
+                            <form action="{{ url('admin/dashboard/collegepage/destroy/' . $page->id) }}" method="POST"
+                                style="display:inline-block;">
+                                @csrf @method('DELETE')
                                 <button type="submit" class="btn btn-sm btn-danger"
-                                        onclick="return confirm('Are you sure?')">Delete</button>
+                                    onclick="return confirm('Are you sure?')">Delete</button>
                             </form>
+                            <button type="button" class="btn btn-sm btn-success forward-btn"
+                                data-id="{{ $page->id }}">Forward</button>
+                            @elseif($page->status === 'forwarded')
+                            <button class="btn btn-sm btn-success" disabled>Forwarded</button>
+                            @elseif($page->status === 'rejected')
+                            <form action="{{ url('admin/dashboard/collegepage/destroy/' . $page->id) }}" method="POST"
+                                style="display:inline-block;">
+                                @csrf @method('DELETE')
+                                <button type="submit" class="btn btn-sm btn-danger"
+                                    onclick="return confirm('Are you sure?')">Delete</button>
+                            </form>
+                            @endif
                         </td>
                     </tr>
                     @empty
                     <tr>
-                        <td colspan="6" class="text-center">No college page found for your college yet.</td>
+                        <td colspan="4" class="text-center">No college page found for your college yet.</td>
                     </tr>
                     @endforelse
                 </tbody>
@@ -74,4 +97,5 @@
         </div>
     </div>
 </div>
+
 @endsection

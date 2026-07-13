@@ -3,6 +3,7 @@
 @section('title', 'Contact || Acharya Jagadish Chandra Bose Polytechnic')
 
 @section('content')
+@if($page)
 <div>
     @if(session('error'))
     <p style="color:red">{{ session('error') }}</p>
@@ -118,4 +119,11 @@
         </div>
     </section>
 </div>
+@else
+
+    <div class="alert alert-warning text-center mt-5">
+        <h5>No data available.</h5>
+    </div>
+
+@endif
 @endsection

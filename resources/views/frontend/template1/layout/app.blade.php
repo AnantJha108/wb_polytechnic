@@ -17,23 +17,6 @@
             font-size: 14px;
             padding: 5px 0;
         }
-
-        .hero {
-            background: url('banner.jpg') center/cover no-repeat;
-            height: 350px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: white;
-            text-align: center;
-        }
-
-        .hero h1 {
-            font-weight: 700;
-            font-size: 48px;
-            text-shadow: 0 2px 5px rgba(0, 0, 0, .5);
-        }
-
         .card-overlay {
             background: linear-gradient(transparent, rgba(0, 0, 0, .7));
             color: white;
@@ -42,18 +25,15 @@
             width: 100%;
             padding: 10px;
         }
-
         .card-img {
             height: 180px;
             object-fit: cover;
         }
-
         .committee {
             background: #d88c0f;
             color: white;
             padding: 60px 0;
         }
-
         .news-card {
             border-left: 5px solid orange;
         }
@@ -70,14 +50,13 @@
             text-align: center;
         }
     </style>
-
     @stack('styles')
 </head>
 
 <body>
 
     @include('frontend.template1.partials.header')
-    <main class="container">
+    <main class="container-fluid">
         <div class="positon position-absolute">
             @if(session('success'))
             <div class="alert alert-success">

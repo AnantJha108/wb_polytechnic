@@ -19,14 +19,21 @@ class User extends Authenticatable
      * @var list<string>
      */
     protected $fillable = [
+        'college_id',
         'username',
         'phone',
+        'master_id',
         'email',
         'password',
+        'otp',
         'role',
+        'otp_expires_at',
         'login_attempts',
         'locked_until',
-        'lock_started_at'
+        'otp_attempts',
+        'otp_resend_locked_until',
+        'otp_lock_started_at',
+        'lock_started_at',
     ];
 
 

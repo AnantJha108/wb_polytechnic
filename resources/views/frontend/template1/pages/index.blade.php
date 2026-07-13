@@ -3,31 +3,24 @@
 @section('title', 'Acharya Jagadish Chandra Bose Polytechnic')
 
 @section('content')
-<div class="contianer mt-5 mb-5">
-    <section class="hero">
-        <div>
-            <h2>WELCOME TO</h2>
-            <h1>ACHARYA JAGADISH CHANDRA BOSE POLYTECHNIC</h1>
-        </div>
-    </section>
+@if($page)
+<div>
+    @if($bannerUrl)
+    <img src="{{ $bannerUrl }}" width="100%" class="img-fluid">
+    @endif
+</div>
+<div class="contianer">
     <!-- WELCOME SECTION -->
     <section class="container py-5">
         <div class="row">
             <div class="col-lg-6">
                 <h3 class="text-success">
-                    Welcome to Acharya Jagadish Chandra Bose Polytechnic
+                    Welcome to {{ $college->name }}
                 </h3>
                 <p>
-                    To meet up the demand of Technical Education in the district of North 24 Parganas, Deganga Block,
-                    Government Polytechnic was established in 1962, by the Department of Technical Education and
-                    Training, Government of West Bengal. Currently the following four courses are offered by the
-                    Institute 1.Diploma in Civil Engineering 2.Diploma in Mechanical Engineering 3.Diploma in Electrical
-                    Engineering 4.Electronics and Telecommunication Engineering . All these courses are approved by the
-                    AICTE and are affiliated to the West Bengal State Council of Technical and Vocational Education and
-                    Skill Development. It is a co-educational institute. The institute has well qualified and dedicated
-                    teaching faculty that educates students by an enjoyable and easy learning process. For any kind of
-                    Training and Placement activities kindly contact to our TPO-
-                    tpo(underscore)ajcbp(at)wbscte(dot)ac(dot)in / tpo(dot)ajcbp(at)rediffmail(dot)com
+                    @if($page)
+                    {!! $page->description !!}
+                    @endif
                 </p>
             </div>
 
@@ -75,32 +68,20 @@
     <!-- PRINCIPAL MESSAGE -->
 
     <section class="container pb-5">
-
         <div class="row">
-
             <div class="col-md-6">
-                <img src="principal.jpg" class="img-fluid">
+                @if($principleImageUrl)
+                <img src="{{ $principleImageUrl }}" width="100%">
+                @endif
             </div>
 
-            <div class="col-md-6 bg-success text-white p-4">
-
-                <h5>Principal Message</h5>
-
+            <div class="col-md-6 bg-success text-white p-5">
+                <h5 class="h4">Principal Message</h5>
                 <p>
-                    Dear All, I am proud of being the Officer-in-Charge of an institute which is dedicated to enable
-                    youth empowerment through technical education which will help students to unchain barriers to reach
-                    greater heights. On behalf of the students, faculty, staff and administration, I heartily welcome
-                    you to Acharya Jagadish Chandra Bose Polytechnic, established in 1962 and it is affiliated to West
-                    Bengal State Council of Technical & Vocational Education & Skill Development and approved by AICTE.
-                    We provide perfect environment for learning. The institute boasts upon having a large campus
-                    equipped with state-of-the-art infrastructure. We ensure friendly, supportive and safe environment
-                    through various measures to make the campus safe and ragging-free. I am sincere to motivate and
-                    rejuvenate every Department of this Institute to be shining as Outstanding Units Diploma in
-                    Engineering Education.
-
-                    Thanks
-                    Principal
-                    Acharya Jagadish Chandra Bose Polytechnic
+                    {!! $page->principle_message !!}
+                <p class="py-1 m-0">Thanks</p>
+                <p class="py-1 m-0">Principal</p>
+                <p class="py-1 m-0">{{ $college->name }}</p>
                 </p>
 
             </div>
@@ -190,4 +171,11 @@
 
     </section>
 </div>
+@else
+
+<div class="alert alert-warning text-center mt-5">
+    <h5>No data available.</h5>
+</div>
+
+@endif
 @endsection

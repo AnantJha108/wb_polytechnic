@@ -4,15 +4,13 @@
 
 @section('content')
 <!-- Hero Banner -->
-
+@if($page)
 <section class="hero">
-
     <div>
-
-        <h1>Alipurduar Damanpur Government Polytechnic</h1>
-
+        @if($bannerUrl)
+        <img src="{{ $bannerUrl }}" width="100%" class="img-fluid">
+        @endif
     </div>
-
 </section>
 
 
@@ -23,13 +21,13 @@
     <div class="container text-center">
 
         <h2 class="section-title">
-            Welcome to <span class="text-success">Alipurduar Damanpur Government Polytechnic</span>
+            Welcome to <span class="text-success">{{ $college->name }}</span>
         </h2>
 
         <p>
-            North Bengal in general and Alipurduar in particular is a beautiful place of nature, tea gardens,
-            forests and rivers. The institute provides quality education and encourages students
-            to build a bright career.
+            @if($page)
+            {!! $page->description !!}
+            @endif
         </p>
 
     </div>
@@ -42,78 +40,46 @@
 <section class="blue-bg">
 
     <div class="container">
-
         <div class="row g-4">
-
             <div class="col-md-3">
-
                 <div class="card card-custom text-center">
-
-                    <img src="course.jpg" class="card-img-top">
-
+                    <img src="https://polytechnic.wbtetsd.gov.in/themes/main/images/img1.jpg" class="card-img">
                     <div class="card-body">
-
                         <h5 class="card-title">Courses Offered</h5>
-
                         <p>Computer Science & Tech<br>Electrical Engineering</p>
-
                         <a href="#" class="btn btn-outline-success">View More</a>
-
                     </div>
-
                 </div>
-
             </div>
 
 
             <div class="col-md-3">
-
                 <div class="card card-custom text-center">
-
-                    <img src="facilities.jpg" class="card-img-top">
-
+                    <img src="https://polytechnic.wbtetsd.gov.in/themes/main/images/img2.jpg" class="card-img">
                     <div class="card-body">
-
                         <h5 class="card-title">Facilities</h5>
-
                         <p>Academic building, labs, campus facilities etc.</p>
-
                         <a href="#" class="btn btn-outline-success">View More</a>
-
                     </div>
-
                 </div>
-
             </div>
 
 
             <div class="col-md-3">
-
                 <div class="card card-custom text-center">
-
-                    <img src="admission.jpg" class="card-img-top">
-
+                    <img src="https://polytechnic.wbtetsd.gov.in/themes/main/images/img3.jpg" class="card-img">
                     <div class="card-body">
-
                         <h5 class="card-title">Admission</h5>
-
                         <p>Government Polytechnic admission information.</p>
-
                         <a href="#" class="btn btn-outline-success">View More</a>
-
                     </div>
-
                 </div>
-
             </div>
 
 
             <div class="col-md-3">
-
                 <div class="card card-custom text-center">
-
-                    <img src="institution.jpg" class="card-img-top">
-
+                    <img src="https://polytechnic.wbtetsd.gov.in/themes/main/images/img4.jpg" class="card-img">
                     <div class="card-body">
 
                         <h5 class="card-title">Institution</h5>
@@ -135,141 +101,33 @@
 </section>
 
 
-
-<!-- Committee Section -->
-
-<section class="py-5">
-
-    <div class="container text-center">
-
-        <h2 class="section-title">
-            Our <span class="text-success">Committee</span>
-        </h2>
-
-        <div class="row g-4">
-
-            <div class="col-md-4">
-
-                <div class="committee-box committee-green">
-                    Student Welfare Committee
-                </div>
-
-            </div>
-
-
-            <div class="col-md-4">
-
-                <div class="committee-box committee-blue">
-                    Internal Complaint Committee
-                </div>
-
-            </div>
-
-
-            <div class="col-md-4">
-
-                <div class="committee-box committee-green">
-                    Anti Ragging Committee
-                </div>
-
-            </div>
-
-        </div>
-
-    </div>
-
-</section>
-
-
-
-<!-- Notice Section -->
-
-<section class="notice-box">
-
-    <div class="container">
-
-        <h2 class="text-center section-title">
-            Our <span class="text-success">Notice & Announcement</span>
-        </h2>
-
+<section class="container p-5">
         <div class="row align-items-center">
-
-            <div class="col-md-2 text-center">
-
-                <h1>18</h1>
-
-                <p>FEB 2026</p>
-
+            <div class="col-md-6">
+                @if($principleImageUrl)
+                <img src="{{ $principleImageUrl }} "width="400">
+                @endif
             </div>
 
-            <div class="col-md-7">
-
-                <h4>Quotation for compound street light</h4>
-
+            <div class="col-md-6 bg-success text-white p-5">
+                <h5 class="h4">Principal Message</h5>
                 <p>
-                    Sealed quotations are invited for maintenance & supply of compound street lights.
+                    {!! $page->principle_message !!}
+                <p class="py-1 m-0">Thanks</p>
+                <p class="py-1 m-0">Principal</p>
+                <p class="py-1 m-0">{{ $college->name }}</p>
                 </p>
 
-                <a href="#">Download PDF</a>
-
-            </div>
-
-            <div class="col-md-3 text-center">
-
-                <button class="btn btn-outline-success">View More</button>
-
             </div>
 
         </div>
 
+    </section>
+@else
+
+    <div class="alert alert-warning text-center mt-5">
+        <h5>No data available.</h5>
     </div>
 
-</section>
-
-
-
-<!-- Events -->
-
-<section class="py-5">
-
-    <div class="container text-center">
-
-        <h2 class="section-title">
-            Upcoming <span class="text-success">News and Events</span>
-        </h2>
-
-        <div class="row align-items-center">
-
-            <div class="col-md-2">
-
-                <h1>22</h1>
-
-                <p>JUL 2022</p>
-
-            </div>
-
-            <div class="col-md-7 text-start">
-
-                <h4>AICTE Letter of Approval</h4>
-
-                <p>
-                    Institute has successfully obtained Letter of Approval (LoA).
-                </p>
-
-                <a href="#">Download PDF</a>
-
-            </div>
-
-            <div class="col-md-3">
-
-                <button class="btn btn-outline-success">View More</button>
-
-            </div>
-
-        </div>
-
-    </div>
-
-</section>
-
+@endif
 @endsection

@@ -42,8 +42,182 @@
         });
     });
 </script>
+
+{{-- college page approval logic --}}
 <script>
-document.addEventListener('DOMContentLoaded', function () {
+    $(document).ready(function () {
+    $.ajaxSetup({ headers: { 'X-CSRF-TOKEN': '{{ csrf_token() }}' } });
+    var pageId = $('#pageCard').data('page-id');
+
+    function setStatusBadge(status) {
+        var badge = $('.status-badge');
+        badge.removeClass('bg-secondary bg-warning text-dark bg-success bg-danger bg-info');
+        if (status === 'draft') badge.addClass('bg-secondary');
+        else if (status === 'forwarded') badge.addClass('bg-warning text-dark');
+        else if (status === 'approved') badge.addClass('bg-success');
+        else if (status === 'rejected') badge.addClass('bg-danger');
+        else badge.addClass('bg-info');
+        badge.text(status.charAt(0).toUpperCase() + status.slice(1));
+    }
+
+    $('.approve-btn').on('click', function () {
+        if (!confirm('Approve this page?')) return;
+        $.post('{{ url("admin/dashboard/college/approve") }}/' + pageId, {})
+            .done(function (res) {
+                if (res.success) {
+                    setStatusBadge('approved');
+                    $('#actionButtons').empty();
+                    $('#statusMessage').html('<div class="alert alert-success mb-3">This page has been approved and is live.</div>');
+                    $('#alertBox').html('<div class="alert alert-success">' + res.message + '</div>');
+                }
+            })
+            .fail(function (xhr) {
+                $('#alertBox').html('<div class="alert alert-danger">' + (xhr.responseJSON?.message || 'Error') + '</div>');
+            });
+    });
+
+    $('.reject-submit-btn').on('click', function () {
+        var reason = $('#rejectReason').val().trim();
+        if (!reason) { alert('Please enter a reason.'); return; }
+
+        $.post('{{ url("admin/dashboard/college/reject") }}/' + pageId, { reason: reason })
+            .done(function (res) {
+                if (res.success) {
+                    setStatusBadge('rejected');
+                    $('#actionButtons').empty();
+                    $('#statusMessage').html('<div class="alert alert-danger mb-3"><strong>Rejected — Reason:</strong> ' + res.reason + '</div>');
+                    $('#rejectModal').modal('hide');
+                    $('#alertBox').html('<div class="alert alert-success">' + res.message + '</div>');
+                }
+            })
+            .fail(function (xhr) {
+                $('#alertBox').html('<div class="alert alert-danger">' + (xhr.responseJSON?.message || 'Error') + '</div>');
+            });
+    });
+
+    $('.revert-submit-btn').on('click', function () {
+        var reason = $('#revertReason').val().trim();
+        if (!reason) { alert('Please enter a reason.'); return; }
+
+        $.post('{{ url("admin/dashboard/college/revert") }}/' + pageId, { reason: reason })
+            .done(function (res) {
+                if (res.success) {
+                    setStatusBadge('reverted');
+                    $('#actionButtons').empty();
+                    $('#statusMessage').html('<div class="alert alert-warning mb-3"><strong>Reverted — Reason:</strong> ' + res.reason + '</div>');
+                    $('#revertModal').modal('hide');
+                    $('#alertBox').html('<div class="alert alert-success">' + res.message + '</div>');
+                }
+            })
+            .fail(function (xhr) {
+                $('#alertBox').html('<div class="alert alert-danger">' + (xhr.responseJSON?.message || 'Error') + '</div>');
+            });
+    });
+});
+</script>
+
+{{-- image preview for banner and principle image uploaded by operator  --}}
+<script>
+$(document).ready(function () {
+
+    function previewImage(inputId, thumbId) {
+        $('#' + inputId).on('change', function (e) {
+            var file = e.target.files[0];
+
+            if (!file) {
+                $('#' + thumbId).hide();
+                return;
+            }
+
+            if (!file.type.startsWith('image/')) {
+                alert('Please select a valid image file.');
+                $(this).val('');
+                $('#' + thumbId).hide();
+                return;
+            }
+
+            var reader = new FileReader();
+
+            reader.onload = function (event) {
+                var dataUrl = event.target.result;
+
+                // Show inline thumbnail
+                $('#' + thumbId).attr('src', dataUrl).show();
+
+                // Auto-open full-screen preview immediately
+                $('#fullScreenPreviewImage').attr('src', dataUrl);
+                $('#fullScreenPreview').css('display', 'flex');
+            };
+
+            reader.readAsDataURL(file);
+        });
+
+        // Clicking the thumbnail later also reopens full preview
+        $('#' + thumbId).on('click', function () {
+            var src = $(this).attr('src');
+            $('#fullScreenPreviewImage').attr('src', src);
+            $('#fullScreenPreview').css('display', 'flex');
+        });
+    }
+
+    previewImage('bannerInput', 'bannerThumb');
+    previewImage('principleImageInput', 'principleImageThumb');
+
+    // Close on × click
+    $('#closePreview').on('click', function () {
+        $('#fullScreenPreview').hide();
+    });
+
+    // Close on clicking outside the image (on the dark backdrop)
+    $('#fullScreenPreview').on('click', function (e) {
+        if (e.target.id === 'fullScreenPreview') {
+            $(this).hide();
+        }
+    });
+
+    // Close on Escape key
+    $(document).on('keydown', function (e) {
+        if (e.key === 'Escape') {
+            $('#fullScreenPreview').hide();
+        }
+    });
+});
+</script>
+
+{{-- college page forward/reject/revert logic --}}
+<script>
+    $(document).ready(function () {
+    $.ajaxSetup({ headers: { 'X-CSRF-TOKEN': '{{ csrf_token() }}' } });
+
+    $(document).on('click', '.forward-btn', function () {
+        var btn = $(this), id = btn.data('id'), row = btn.closest('tr');
+        btn.prop('disabled', true).text('Forwarding...');
+
+        $.post('{{ url("admin/dashboard/collegepage/forward") }}/' + id, {})
+            .done(function (res) {
+                if (res.success) {
+                    row.find('.status-cell').html('<span class="badge bg-warning text-dark">Forwarded</span>');
+                    row.find('.action-cell').html(
+                        '<a href="{{ url("admin/dashboard/collegepage/show") }}/' + id + '" class="btn btn-sm btn-info">View</a> ' +
+                        '<button class="btn btn-sm btn-success" disabled>Forwarded</button>'
+                    );
+                    $('#addPageBtn').hide();
+                    $('#alertBox').html('<div class="alert alert-success">' + res.message + '</div>');
+                }
+            })
+            .fail(function (xhr) {
+                var msg = xhr.responseJSON?.message || 'Something went wrong.';
+                $('#alertBox').html('<div class="alert alert-danger">' + msg + '</div>');
+                btn.prop('disabled', false).text('Forward');
+            });
+    });
+});
+</script>
+
+{{-- logo preview logic --}}
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
     const logoInput  = document.getElementById('logo');
     const previewBtn = document.getElementById('previewLogoBtn');
     const previewImg = document.getElementById('logoPreviewImg');
@@ -74,6 +248,7 @@ document.addEventListener('DOMContentLoaded', function () {
     });
 });
 </script>
+
 <script>
     $(document).ready(function(){
 

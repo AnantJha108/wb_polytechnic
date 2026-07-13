@@ -4,15 +4,22 @@ namespace App\Http\Controllers\backend\dashboard;
 
 use App\Http\Controllers\Controller;
 use App\Models\College as CollegeModel;
+use App\Models\CollegePage;
+use App\Models\CollegePage as CollegePageModel;
+use App\Models\CollegePageLog;
+use App\Models\Master;
 use App\Models\Menu;
 use App\Models\Template;
-use Illuminate\Contracts\Encryption\DecryptException;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
+use Illuminate\Support\Str;
+
 
 class College extends Controller
 {
@@ -20,13 +27,15 @@ class College extends Controller
     {
         $user = Auth::user();
 
-        //  Step 1: Get allowed menu IDs
+        if (!$user->master_id) {
+            return collect();
+        }
+
         $menuIds = DB::table('menu_user_maps')
-            ->where('user_id', $user->id)
+            ->where('master_id', $user->master_id)
             ->pluck('menu_id')
             ->toArray();
 
-        //  If no access → empty sidebar
         if (empty($menuIds)) {
             return collect();
         }
@@ -38,13 +47,53 @@ class College extends Controller
 
         return Menu::where('menu_id', 0)
             ->get()
-            ->filter(function ($parent) use ($childMenus) {
-                return isset($childMenus[$parent->id]);
-            })
+            ->filter(fn($parent) => isset($childMenus[$parent->id]))
             ->map(function ($parent) use ($childMenus) {
                 $parent->children = $childMenus[$parent->id];
                 return $parent;
             });
+    }
+
+    private function generateStrongPassword(int $length = 10): string
+    {
+        $uppercase = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+        $lowercase = 'abcdefghijklmnopqrstuvwxyz';
+        $numbers   = '0123456789';
+        $special   = '@$!%*#?&';
+
+        $password  = $uppercase[random_int(0, strlen($uppercase) - 1)];
+        $password .= $lowercase[random_int(0, strlen($lowercase) - 1)];
+        $password .= $numbers[random_int(0, strlen($numbers) - 1)];
+        $password .= $special[random_int(0, strlen($special) - 1)];
+
+        $allChars = $uppercase . $lowercase . $numbers . $special;
+        for ($i = strlen($password); $i < $length; $i++) {
+            $password .= $allChars[random_int(0, strlen($allChars) - 1)];
+        }
+
+        return str_shuffle($password);
+    }
+
+    // Helper — decrypt an encrypted "mime|base64" image into a data URI
+    private function decryptImage($encrypted)
+    {
+        if (!$encrypted) {
+            return null;
+        }
+
+        try {
+            $decrypted = Crypt::decryptString($encrypted);
+            $parts = explode('|', $decrypted, 2);
+
+            if (count($parts) === 2) {
+                [$mimeType, $imageData] = $parts;
+                return "data:{$mimeType};base64,{$imageData}";
+            }
+        } catch (\Illuminate\Contracts\Encryption\DecryptException $e) {
+            return null;
+        }
+
+        return null;
     }
 
     // /admin/dashboard/college/index
@@ -52,32 +101,27 @@ class College extends Controller
     {
         $colleges = CollegeModel::all();
         $menus = $this->getMenus();
+
         foreach ($colleges as $college) {
-            $college->logo_url = null;
-
-            if ($college->logo) {
-                try {
-                    $decrypted = Crypt::decryptString($college->logo);
-                    $parts = explode('|', $decrypted, 2);
-
-                    if (count($parts) === 2) {
-                        [$mimeType, $imageData] = $parts;
-                        $college->logo_url = "data:{$mimeType};base64,{$imageData}";
-                    }
-                } catch (\Illuminate\Contracts\Encryption\DecryptException $e) {
-                    $college->logo_url = null;
-                }
-            }
+            $college->logo_url = $this->decryptImage($college->logo);
         }
+
         return view('backend.admin.college.viewCollege', compact('colleges', 'menus'));
     }
 
-    // /admin/dashboard/college/store  (GET shows form, POST saves)
+    // GET: /admin/dashboard/college/create
     public function create(Request $request, $id)
     {
-
         $menus     = $this->getMenus();
-        $templates = Template::all(); // for the dropdown
+        $templates = Template::all();
+
+        return view('backend.admin.college.addCollege', compact('menus', 'templates'));
+    }
+
+    public function store(Request $request, $id)
+    {
+        $menus     = $this->getMenus();
+        $templates = Template::all();
 
         if ($request->isMethod('POST')) {
 
@@ -96,7 +140,6 @@ class College extends Controller
                 'slug.unique'  => 'This slug is already taken. Please enter a new slug.',
             ]);
 
-            // ── Step 1: Save college WITHOUT logo and college_id first ──
             $college = CollegeModel::create([
                 'name'        => $request->name,
                 'slug'        => $request->slug,
@@ -108,62 +151,55 @@ class College extends Controller
                 'status'      => $request->status,
             ]);
 
-            // ── Step 2: Generate college_id using primary key ──
-            // Format: COLL1234 + id  → e.g. id=1 → "COLL12341"
             $collegeId = 'COLL1234' . $college->id;
 
-            // ── Step 3: Handle logo upload + encrypt ──
             $encryptedLogo = null;
 
             if ($request->hasFile('logo')) {
                 $file = $request->file('logo');
 
-                $mimeType     = $file->getMimeType();               // e.g. image/png
+                $mimeType     = $file->getMimeType();
                 $imageContent = file_get_contents($file->getRealPath());
                 $base64       = base64_encode($imageContent);
 
                 $encryptedLogo = Crypt::encryptString($mimeType . '|' . $base64);
             }
 
-
-            // ── Step 4: Update college with college_id and logo ──
             $college->update([
                 'college_id' => $collegeId,
                 'logo'       => $encryptedLogo,
             ]);
 
-            return redirect()->back()->with('success', 'College added successfully! ID: ' . $collegeId);
+            $plainPassword = $this->generateStrongPassword(10);
+
+            $principalRole = Master::where('name', 'principal')->first();
+
+            $user = User::create([
+                'college_id' => $college->id,
+                'username'   => $college->name,
+                'phone'      => $college->contact_no,
+                'email'      => $college->email,
+                'master_id'  => $principalRole->id ?? 3,
+                'password'   => Hash::make($plainPassword),
+            ]);
+
+            return redirect('admin/dashboard/college/index')->with([
+                'success'          => 'College created successfully!',
+                'college_id_shown' => $collegeId,
+                'college_password' => $plainPassword,
+            ]);
         }
-
-        // GET — show the form
-        return view('backend.admin.college.addCollege', compact('menus', 'templates'));
     }
-
 
     // GET: /admin/dashboard/college/show/{id}
     public function show($id)
     {
         $menus   = $this->getMenus();
         $college = CollegeModel::findOrFail($id);
-
-        // Decrypt logo for display
-        $logoUrl = null;
-        if ($college->logo) {
-            try {
-                $decrypted = Crypt::decryptString($college->logo);
-                $parts = explode('|', $decrypted, 2);
-                if (count($parts) === 2) {
-                    [$mimeType, $imageData] = $parts;
-                    $logoUrl = "data:{$mimeType};base64,{$imageData}";
-                }
-            } catch (\Illuminate\Contracts\Encryption\DecryptException $e) {
-                $logoUrl = null;
-            }
-        }
+        $logoUrl = $this->decryptImage($college->logo);
 
         return view('backend.admin.college.collegeDetails', compact('menus', 'college', 'logoUrl'));
     }
-
 
     // GET: /admin/dashboard/college/edit/{id}
     public function edit($id)
@@ -171,25 +207,10 @@ class College extends Controller
         $menus     = $this->getMenus();
         $templates = Template::all();
         $college   = CollegeModel::findOrFail($id);
-
-        // Decrypt logo for preview
-        $logoUrl = null;
-        if ($college->logo) {
-            try {
-                $decrypted = Crypt::decryptString($college->logo);
-                $parts = explode('|', $decrypted, 2);
-                if (count($parts) === 2) {
-                    [$mimeType, $imageData] = $parts;
-                    $logoUrl = "data:{$mimeType};base64,{$imageData}";
-                }
-            } catch (\Illuminate\Contracts\Encryption\DecryptException $e) {
-                $logoUrl = null;
-            }
-        }
+        $logoUrl   = $this->decryptImage($college->logo);
 
         return view('backend.admin.college.editCollege', compact('menus', 'templates', 'college', 'logoUrl'));
     }
-
 
     // POST: /admin/dashboard/college/update/{id}
     public function update(Request $request, $id)
@@ -211,7 +232,6 @@ class College extends Controller
             'slug.unique'  => 'This slug is already taken. Please enter a new slug.',
         ]);
 
-        // Keep old logo unless a new one is uploaded
         $encryptedLogo = $college->logo;
 
         if ($request->hasFile('logo')) {
@@ -236,6 +256,21 @@ class College extends Controller
             'logo'        => $encryptedLogo,
         ]);
 
+        // ── Sync the linked principal user account with the updated college info ──
+        $principalRoleId = Master::where('name', 'principal')->value('id');
+
+        $user = User::where('college_id', $college->id)
+            ->where('master_id', $principalRoleId)
+            ->first();
+
+        if ($user) {
+            $user->update([
+                'username' => $request->name,
+                'phone'    => $request->contact_no,
+                'email'    => $request->email,
+            ]);
+        }
+
         return redirect('admin/dashboard/college/index')
             ->with('success', 'College updated successfully!');
     }
@@ -243,7 +278,111 @@ class College extends Controller
     // /admin/dashboard/college/destroy/5
     public function destroy(Request $request, $id)
     {
-        CollegeModel::findOrFail($id)->delete();
-        return redirect()->back()->with('success', 'College deleted.');
+        $college = CollegeModel::findOrFail($id);
+
+        // Delete every user tied to this college (principal login + all operators)
+        User::where('college_id', $college->id)->delete();
+
+        // Clean up related college page content (banner/description/etc.)
+        CollegePage::where('college_id', $college->id)->delete();
+
+        $college->delete();
+
+        return redirect()->back()->with('success', 'College and all associated users deleted.');
+    }
+
+
+    // GET: /admin/dashboard/college/collegepagestatus
+    public function collegePageStatus()
+    {
+        $menus     = $this->getMenus();
+        $collegeId = Auth::user()->college_id;
+
+        $page = CollegePageModel::where('college_id', $collegeId)->first();
+
+        if ($page) {
+            $page->banner_url          = $this->decryptImage($page->banner);
+            $page->principle_image_url = $this->decryptImage($page->principle_image);
+        }
+
+        $logs = $page ? CollegePageLog::with('performer')
+            ->where('college_page_id', $page->id)
+            ->orderByDesc('created_at')
+            ->get() : collect();
+
+        return view('backend.admin.college.collegePageApproval', compact('menus', 'page', 'logs'));
+    }
+
+    // AJAX POST: /admin/dashboard/college/approve/{id}
+    public function approve(Request $request, $id)
+    {
+        $collegeId = Auth::user()->college_id;
+        $page = CollegePageModel::where('college_id', $collegeId)->findOrFail($id);
+
+        if ($page->status !== 'forwarded') {
+            return response()->json(['success' => false, 'message' => 'Only forwarded pages can be approved.'], 422);
+        }
+
+        $page->update(['status' => 'approved']);
+
+        CollegePageLog::create([
+            'college_page_id' => $page->id,
+            'action'          => 'approve',
+            'reason'          => null,
+            'performed_by'    => Auth::id(),
+            'ip_address'      => $request->ip(),
+        ]);
+
+        return response()->json(['success' => true, 'status' => 'approved', 'message' => 'Page approved successfully.']);
+    }
+
+    // AJAX POST: /admin/dashboard/college/reject/{id}
+    public function reject(Request $request, $id)
+    {
+        $request->validate(['reason' => 'required|string|max:1000']);
+
+        $collegeId = Auth::user()->college_id;
+        $page = CollegePageModel::where('college_id', $collegeId)->findOrFail($id);
+
+        if ($page->status !== 'forwarded') {
+            return response()->json(['success' => false, 'message' => 'Only forwarded pages can be rejected.'], 422);
+        }
+
+        $page->update(['status' => 'rejected', 'reject_reason' => $request->reason]);
+
+        CollegePageLog::create([
+            'college_page_id' => $page->id,
+            'action'          => 'reject',
+            'reason'          => $request->reason,
+            'performed_by'    => Auth::id(),
+            'ip_address'      => $request->ip(),
+        ]);
+
+        return response()->json(['success' => true, 'status' => 'rejected', 'reason' => $request->reason, 'message' => 'Page rejected.']);
+    }
+
+    // AJAX POST: /admin/dashboard/college/revert/{id}
+    public function revert(Request $request, $id)
+    {
+        $request->validate(['reason' => 'required|string|max:1000']);
+
+        $collegeId = Auth::user()->college_id;
+        $page = CollegePageModel::where('college_id', $collegeId)->findOrFail($id);
+
+        if ($page->status !== 'forwarded') {
+            return response()->json(['success' => false, 'message' => 'Only forwarded pages can be reverted.'], 422);
+        }
+
+        $page->update(['status' => 'reverted', 'revert_reason' => $request->reason]);
+
+        CollegePageLog::create([
+            'college_page_id' => $page->id,
+            'action'          => 'revert',
+            'reason'          => $request->reason,
+            'performed_by'    => Auth::id(),
+            'ip_address'      => $request->ip(),
+        ]);
+
+        return response()->json(['success' => true, 'status' => 'reverted', 'reason' => $request->reason, 'message' => 'Page reverted to operator.']);
     }
 }

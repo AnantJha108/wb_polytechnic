@@ -5,6 +5,7 @@ namespace App\Http\Controllers\backend\dashboard;
 use App\Http\Controllers\Controller;
 use App\Models\College as CollegeModel;
 use App\Models\CollegePage as CollegePageModel;
+use App\Models\CollegePageLog;
 use App\Models\Menu;
 use Illuminate\Contracts\Encryption\DecryptException;
 use Illuminate\Http\Request;
@@ -17,23 +18,14 @@ class CollegePage extends Controller
     public function getMenus()
     {
         $user = Auth::user();
+        if (!$user->master_id) return collect();
 
-        $menuIds = DB::table('menu_user_maps')
-            ->where('user_id', $user->id)
-            ->pluck('menu_id')
-            ->toArray();
+        $menuIds = DB::table('menu_user_maps')->where('master_id', $user->master_id)->pluck('menu_id')->toArray();
+        if (empty($menuIds)) return collect();
 
-        if (empty($menuIds)) {
-            return collect();
-        }
+        $childMenus = Menu::whereIn('id', $menuIds)->where('menu_id', '!=', 0)->get()->groupBy('menu_id');
 
-        $childMenus = Menu::whereIn('id', $menuIds)
-            ->where('menu_id', '!=', 0)
-            ->get()
-            ->groupBy('menu_id');
-
-        return Menu::where('menu_id', 0)
-            ->get()
+        return Menu::where('menu_id', 0)->get()
             ->filter(fn($parent) => isset($childMenus[$parent->id]))
             ->map(function ($parent) use ($childMenus) {
                 $parent->children = $childMenus[$parent->id];
@@ -41,10 +33,22 @@ class CollegePage extends Controller
             });
     }
 
-    /**
-     * Compress + resize an uploaded image, then encrypt as "mime|base64".
-     * Keeps images small so they never hit MySQL's max_allowed_packet limit.
-     */
+    private function decryptImage($encrypted)
+    {
+        if (!$encrypted) return null;
+        try {
+            $decrypted = Crypt::decryptString($encrypted);
+            $parts = explode('|', $decrypted, 2);
+            if (count($parts) === 2) {
+                [$mimeType, $imageData] = $parts;
+                return "data:{$mimeType};base64,{$imageData}";
+            }
+        } catch (DecryptException $e) {
+            return null;
+        }
+        return null;
+    }
+
     private function encryptImage(Request $request, string $field, $oldValue = null, int $maxWidth = 800, int $quality = 70)
     {
         if (!$request->hasFile($field)) {
@@ -56,7 +60,6 @@ class CollegePage extends Controller
 
         [$width, $height, $type] = getimagesize($path);
 
-        // Load image based on original type
         $source = match ($type) {
             IMAGETYPE_JPEG => imagecreatefromjpeg($path),
             IMAGETYPE_PNG  => imagecreatefrompng($path),
@@ -78,7 +81,6 @@ class CollegePage extends Controller
 
             $resized = imagecreatetruecolor($newWidth, $newHeight);
 
-            // Preserve transparency for PNG/GIF
             if ($type === IMAGETYPE_PNG || $type === IMAGETYPE_GIF) {
                 imagecolortransparent($resized, imagecolorallocatealpha($resized, 0, 0, 0, 127));
                 imagealphablending($resized, false);
@@ -90,7 +92,7 @@ class CollegePage extends Controller
             $source = $resized;
         }
 
-        // Compress to JPEG in memory (smallest reliable format for photos)
+        // Compress to JPEG in memory
         ob_start();
         imagejpeg($source, null, $quality);
         $compressedData = ob_get_clean();
@@ -101,52 +103,20 @@ class CollegePage extends Controller
         return Crypt::encryptString('image/jpeg|' . $base64);
     }
 
-    /**
-     * Decrypt an encrypted "mime|base64" image into a data URI for <img src="">.
-     */
-    private function decryptImage($encrypted)
-    {
-        if (!$encrypted) {
-            return null;
-        }
-
-        try {
-            $decrypted = Crypt::decryptString($encrypted);
-            $parts = explode('|', $decrypted, 2);
-
-            if (count($parts) === 2) {
-                [$mimeType, $imageData] = $parts;
-                return "data:{$mimeType};base64,{$imageData}";
-            }
-        } catch (DecryptException $e) {
-            return null;
-        }
-
-        return null;
-    }
-
-    // Get the logged-in operator's own college — the ONLY college they're allowed to manage
     private function getOperatorCollege()
     {
         $user = Auth::user();
-
-        if (!$user->college_id) {
-            abort(403, 'No college is assigned to your account. Contact the administrator.');
-        }
-
+        if (!$user->college_id) abort(403, 'No college is assigned to your account.');
         return CollegeModel::findOrFail($user->college_id);
     }
 
     // GET: /admin/dashboard/collegepage/index
     public function index()
     {
-        $menus  = $this->getMenus();
+        $menus   = $this->getMenus();
         $college = $this->getOperatorCollege();
 
-        // Only this operator's own college pages
-        $pages = CollegePageModel::with('college')
-            ->where('college_id', $college->id)
-            ->get();
+        $pages = CollegePageModel::where('college_id', $college->id)->get();
 
         foreach ($pages as $page) {
             $page->banner_url          = $this->decryptImage($page->banner);
@@ -161,25 +131,28 @@ class CollegePage extends Controller
     {
         $menus   = $this->getMenus();
         $college = $this->getOperatorCollege();
-
-        // Ensure the page belongs to this operator's college
-        $page = CollegePageModel::with('college')
-            ->where('college_id', $college->id)
-            ->findOrFail($id);
+        $page = CollegePageModel::where('college_id', $college->id)->findOrFail($id);
 
         $bannerUrl         = $this->decryptImage($page->banner);
         $principleImageUrl = $this->decryptImage($page->principle_image);
 
-        return view('backend.admin.collegePage.collegePageDetails', compact(
-            'menus', 'page', 'bannerUrl', 'principleImageUrl'
-        ));
+        return view('backend.admin.collegePage.collegePageDetails', compact('menus', 'page', 'bannerUrl', 'principleImageUrl'));
     }
 
+    // GET: /admin/dashboard/collegepage/create
     // GET: /admin/dashboard/collegepage/create
     public function create()
     {
         $menus   = $this->getMenus();
         $college = $this->getOperatorCollege();
+
+        $existing = CollegePageModel::where('college_id', $college->id)->first();
+
+        // Block access if a page already exists and its status is not "rejected"
+        if ($existing && $existing->status !== 'rejected') {
+            return redirect('admin/dashboard/collegepage/index')
+                ->with('error', 'The page is already inserted and available.');
+        }
 
         return view('backend.admin.collegePage.addCollegePage', compact('menus', 'college'));
     }
@@ -189,34 +162,68 @@ class CollegePage extends Controller
     {
         $college = $this->getOperatorCollege();
 
-        // Prevent duplicate page for the same college
-        if (CollegePageModel::where('college_id', $college->id)->exists()) {
-            return redirect()->back()
-                ->with('error', 'A page already exists for your college. Please edit it instead.');
-        }
+        $request->validate(
+            [
+                'page' => ['required', 'string', 'max:100', 'in:home,about,contact'],
+                'description' => ['required', 'string', 'min:20', 'max:10000'],
+                'banner' => ['required', 'image', 'mimes:jpeg,jpg,png,webp', 'max:2048'],
+                'principle_image' => ['required', 'image', 'mimes:jpeg,jpg,png,webp', 'max:2048'],
+                'principle_message' => ['required', 'string', 'min:20', 'max:5000'],
+            ],
+            [
+                'page.required' => 'Please select a page.',
+                'page.in' => 'Invalid page selected.',
+                'description.required' => 'Description is required.',
+                'description.min' => 'Description must contain at least 20 characters.',
+                'description.max' => 'Description cannot exceed 10000 characters.',
+                'banner.required' => 'Please upload a banner image.',
+                'banner.image' => 'Banner must be an image.',
+                'banner.mimes' => 'Banner must be jpeg, jpg, png or webp.',
+                'banner.max' => 'Banner image size must not exceed 2 MB.',
+                'principle_image.required' => 'Please upload the Principal image.',
+                'principle_image.image' => 'Principal image must be an image.',
+                'principle_image.mimes' => 'Principal image must be jpeg, jpg, png or webp.',
+                'principle_image.max' => 'Principal image size must not exceed 2 MB.',
+                'principle_message.required' => 'Principal message is required.',
+                'principle_message.min' => 'Principal message should contain at least 20 characters.',
+                'principle_message.max' => 'Principal message cannot exceed 5000 characters.',
+            ]
+        );
 
-        $request->validate([
-            'page'               => 'required|string|max:255',
-            'description'        => 'nullable|string',
-            'banner'             => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
-            'principle_image'    => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
-            'principle_message'  => 'nullable|string',
-        ]);
+        // ── Single source of truth: check existing row + its status ──
+        $existing = CollegePageModel::where('college_id', $college->id)->first();
+
+        if ($existing && $existing->status !== 'rejected') {
+            return redirect('admin/dashboard/collegepage/index')
+                ->with('error', 'The page is already inserted and available.');
+        }
 
         $encryptedBanner         = $this->encryptImage($request, 'banner');
         $encryptedPrincipleImage = $this->encryptImage($request, 'principle_image');
 
-        CollegePageModel::create([
-            'college_id'         => $college->id, // always from logged-in operator, never from form
-            'page'               => $request->page,
-            'description'        => $request->description,
-            'banner'             => $encryptedBanner,
-            'principle_image'    => $encryptedPrincipleImage,
-            'principle_message'  => $request->principle_message,
-        ]);
+        if ($existing && $existing->status === 'rejected') {
+            $existing->update([
+                'page'               => $request->page,
+                'description'        => $request->description,
+                'banner'             => $encryptedBanner,
+                'principle_image'    => $encryptedPrincipleImage,
+                'principle_message'  => $request->principle_message,
+                'status'             => 'draft',
+                'reject_reason'      => null,
+            ]);
+        } else {
+            CollegePageModel::create([
+                'college_id'         => $college->id,
+                'page'               => $request->page,
+                'description'        => $request->description,
+                'banner'             => $encryptedBanner,
+                'principle_image'    => $encryptedPrincipleImage,
+                'principle_message'  => $request->principle_message,
+                'status'             => 'draft',
+            ]);
+        }
 
-        return redirect('admin/dashboard/collegepage/index')
-            ->with('success', 'College page created successfully!');
+        return redirect('admin/dashboard/collegepage/index')->with('success', 'College page saved successfully!');
     }
 
     // GET: /admin/dashboard/collegepage/edit/{id}
@@ -224,23 +231,27 @@ class CollegePage extends Controller
     {
         $menus   = $this->getMenus();
         $college = $this->getOperatorCollege();
-
         $page = CollegePageModel::where('college_id', $college->id)->findOrFail($id);
+
+        if (!in_array($page->status, ['draft', 'reverted'])) {
+            abort(403, 'This page cannot be edited in its current status.');
+        }
 
         $bannerUrl         = $this->decryptImage($page->banner);
         $principleImageUrl = $this->decryptImage($page->principle_image);
 
-        return view('backend.admin.collegePage.editCollegePage', compact(
-            'menus', 'page', 'college', 'bannerUrl', 'principleImageUrl'
-        ));
+        return view('backend.admin.collegePage.editCollegePage', compact('menus', 'page', 'college', 'bannerUrl', 'principleImageUrl'));
     }
 
     // POST: /admin/dashboard/collegepage/update/{id}
     public function update(Request $request, $id)
     {
         $college = $this->getOperatorCollege();
-
         $page = CollegePageModel::where('college_id', $college->id)->findOrFail($id);
+
+        if (!in_array($page->status, ['draft', 'reverted'])) {
+            abort(403, 'This page cannot be edited in its current status.');
+        }
 
         $request->validate([
             'page'               => 'required|string|max:255',
@@ -254,26 +265,51 @@ class CollegePage extends Controller
         $encryptedPrincipleImage = $this->encryptImage($request, 'principle_image', $page->principle_image);
 
         $page->update([
-            'college_id'         => $college->id, // unchanged, always operator's own college
-            'page'               => $request->page,
-            'description'        => $request->description,
-            'banner'             => $encryptedBanner,
-            'principle_image'    => $encryptedPrincipleImage,
-            'principle_message'  => $request->principle_message,
+            'page' => $request->page,
+            'description' => $request->description,
+            'banner' => $encryptedBanner,
+            'principle_image' => $encryptedPrincipleImage,
+            'principle_message' => $request->principle_message,
+            'status' => 'draft', // reverted → draft after edit
         ]);
 
-        return redirect('admin/dashboard/collegepage/index')
-            ->with('success', 'College page updated successfully!');
+        return redirect('admin/dashboard/collegepage/index')->with('success', 'College page updated successfully!');
     }
 
     // DELETE: /admin/dashboard/collegepage/destroy/{id}
     public function destroy($id)
     {
         $college = $this->getOperatorCollege();
+        $page = CollegePageModel::where('college_id', $college->id)->findOrFail($id);
 
-        CollegePageModel::where('college_id', $college->id)->findOrFail($id)->delete();
+        if (!in_array($page->status, ['draft', 'reverted', 'rejected'])) {
+            abort(403, 'This page cannot be deleted in its current status.');
+        }
 
-        return redirect('admin/dashboard/collegepage/index')
-            ->with('success', 'College page deleted successfully!');
+        $page->delete();
+        return redirect('admin/dashboard/collegepage/index')->with('success', 'College page deleted successfully!');
+    }
+
+    // AJAX POST: /admin/dashboard/collegepage/forward/{id}
+    public function forward(Request $request, $id)
+    {
+        $college = $this->getOperatorCollege();
+        $page = CollegePageModel::where('college_id', $college->id)->findOrFail($id);
+
+        if (!in_array($page->status, ['draft', 'reverted'])) {
+            return response()->json(['success' => false, 'message' => 'This page cannot be forwarded right now.'], 422);
+        }
+
+        $page->update(['status' => 'forwarded']);
+
+        CollegePageLog::create([
+            'college_page_id' => $page->id,
+            'action'          => 'forward',
+            'reason'          => null,
+            'performed_by'    => Auth::id(),
+            'ip_address'      => $request->ip(),
+        ]);
+
+        return response()->json(['success' => true, 'status' => 'forwarded', 'message' => 'Page forwarded for approval.']);
     }
 }

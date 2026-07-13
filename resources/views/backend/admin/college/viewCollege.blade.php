@@ -8,9 +8,17 @@
     <div class="col mt-4">
         <div class="row">
             <h2 class="h4">College List</h2>
-
             @if(session('success'))
-            <p style="color:green">{{ session('success') }}</p>
+            <div class="alert alert-success">
+                <p class="mb-2" style="color:green">{{ session('success') }}</p>
+                @if(session('college_id_shown'))
+                <div class="border rounded p-3 bg-white">
+                    <strong>Login Credentials (save this — password won't be shown again):</strong>
+                    <p class="mb-1 mt-2">College ID: <code>{{ session('college_id_shown') }}</code></p>
+                    <p class="mb-0">Password: <code>{{ session('college_password') }}</code></p>
+                </div>
+                @endif
+            </div>
             @endif
             <div class="table-responsive">
                 <table class="table table-bordered table-striped table-hover align-middle">
@@ -53,7 +61,7 @@
                                 <span class="badge bg-danger">Inactive</span>
                                 @endif
                             </td>
-                            <td>
+                            <td onclick="event.stopPropagation()">
                                 <div class="d-flex">
                                     <a href="{{ url('admin/dashboard/college/edit/' . $college->id) }}"
                                         class="btn btn-sm btn-primary me-2">Edit</a>
@@ -70,7 +78,7 @@
                         </tr>
                         @empty
                         <tr>
-                            <td colspan="9" class="text-center">No colleges found</td>
+                            <td colspan="10" class="text-center">No colleges found</td>
                         </tr>
                         @endforelse
                     </tbody>

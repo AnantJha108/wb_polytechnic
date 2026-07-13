@@ -4,6 +4,7 @@ namespace App\Http\Controllers\backend;
 
 use Captcha;
 use App\Http\Controllers\Controller;
+use App\Models\College;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -22,6 +23,7 @@ class AuthController extends Controller
     {
         return view('backend.auth.login');
     }
+
 
     public function login(Request $request)
     {
@@ -43,11 +45,19 @@ class AuthController extends Controller
 
         $login = trim($request->login);
 
-        // Get user with master relation
-        $user = User::with('master')->where('email', $login)
-            ->orWhere('username', $login)
-            ->orWhere('phone', $login)
-            ->first();
+        // Try matching a College ID first (e.g. COLL123423)
+        $college = College::where('college_id', $login)->first();
+
+        if ($college) {
+            // Found a college — look up the user tied to that college
+            $user = User::with('master')->where('college_id', $college->id)->first();
+        } else {
+            // Fallback: normal email / username / phone login
+            $user = User::with('master')->where('email', $login)
+                ->orWhere('username', $login)
+                ->orWhere('phone', $login)
+                ->first();
+        }
 
         // Check user exists
         if (!$user) {
@@ -83,7 +93,8 @@ class AuthController extends Controller
                 );
             }
         }
-
+        
+        
         if (!Hash::check($request->password, $user->password)) {
 
             $attempts = ($user->login_attempts ?? 0) + 1;

@@ -17,13 +17,15 @@ class AdminController extends Controller
     {
         $user = Auth::user();
 
-        //  Step 1: Get allowed menu IDs
+        if (!$user->master_id) {
+            return collect();
+        }
+
         $menuIds = DB::table('menu_user_maps')
-            ->where('user_id', $user->id)
+            ->where('master_id', $user->master_id)   // ← changed from user_id
             ->pluck('menu_id')
             ->toArray();
 
-        //  If no access → empty sidebar
         if (empty($menuIds)) {
             return collect();
         }
@@ -35,9 +37,7 @@ class AdminController extends Controller
 
         return Menu::where('menu_id', 0)
             ->get()
-            ->filter(function ($parent) use ($childMenus) {
-                return isset($childMenus[$parent->id]);
-            })
+            ->filter(fn($parent) => isset($childMenus[$parent->id]))
             ->map(function ($parent) use ($childMenus) {
                 $parent->children = $childMenus[$parent->id];
                 return $parent;
@@ -56,5 +56,4 @@ class AdminController extends Controller
             compact('user', 'menus')
         );
     }
-
 }

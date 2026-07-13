@@ -30,7 +30,13 @@
                 default => 'index',
                 };
 
+                // Special case: principal's page-review link needs a distinct method name
+                if ($module === 'collegepagestatus') {
+                $url = url('admin/dashboard/college/collegepagestatus');
+                } else {
                 $url = url("admin/dashboard/{$module}/{$action}");
+                }
+
                 @endphp
 
                 <li>

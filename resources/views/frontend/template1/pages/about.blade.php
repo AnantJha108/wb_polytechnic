@@ -3,6 +3,7 @@
 @section('title', 'About || Acharya Jagadish Chandra Bose Polytechnic')
 
 @section('content')
+@if($page)
 <div class="contianer mt-5 mb-5">
     <section>
         <div>
@@ -14,4 +15,11 @@
         </div>
     </section>
 </div>
+@else
+
+    <div class="alert alert-warning text-center mt-5">
+        <h5>No data available.</h5>
+    </div>
+
+@endif
 @endsection
