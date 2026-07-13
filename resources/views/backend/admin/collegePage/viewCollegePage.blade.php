@@ -6,9 +6,11 @@
 <div class="row">
     @include('backend.partials.side')
     <div class="col mt-4">
+        @php $latest = $pages->first(); @endphp
+
         <div class="d-flex justify-content-between align-items-center mb-3">
             <h2 class="h4">College Page</h2>
-            @if(!$pages->first() || $pages->first()->status === 'rejected')
+            @if(!$latest || $latest->status === 'rejected')
             <a href="{{ url('admin/dashboard/collegepage/create') }}" id="addPageBtn" class="btn btn-primary btn-sm">
                 + Add College Page
             </a>
@@ -16,22 +18,26 @@
         </div>
 
         @if(session('success'))
-
         <div class="alert alert-success">
             {{ session('success') }}
         </div>
+        @endif
 
+        @if(session('error'))
+        <div class="alert alert-danger">
+            {{ session('error') }}
+        </div>
         @endif
 
         <div id="alertBox"></div>
 
-        @if($pages->first() && $pages->first()->status === 'rejected' && $pages->first()->reject_reason)
+        @if($latest && $latest->status === 'rejected' && $latest->reject_reason)
         <div class="alert alert-danger" id="reasonBox">
-            <strong>Rejected — Reason:</strong> {{ $pages->first()->reject_reason }}
+            <strong>Rejected — Reason:</strong> {{ $latest->reject_reason }}
         </div>
-        @elseif($pages->first() && $pages->first()->status === 'reverted' && $pages->first()->revert_reason)
+        @elseif($latest && $latest->status === 'reverted' && $latest->revert_reason)
         <div class="alert alert-warning" id="reasonBox">
-            <strong>Reverted — Reason:</strong> {{ $pages->first()->revert_reason }}
+            <strong>Reverted — Reason:</strong> {{ $latest->revert_reason }}
         </div>
         @endif
 
@@ -64,26 +70,30 @@
                             <a href="{{ url('admin/dashboard/collegepage/show/' . $page->id) }}"
                                 class="btn btn-sm btn-info">View</a>
 
-                            @if(in_array($page->status, ['draft', 'reverted']))
-                            <a href="{{ url('admin/dashboard/collegepage/edit/' . $page->id) }}"
-                                class="btn btn-sm btn-primary">Edit</a>
-                            <form action="{{ url('admin/dashboard/collegepage/destroy/' . $page->id) }}" method="POST"
-                                style="display:inline-block;">
-                                @csrf @method('DELETE')
-                                <button type="submit" class="btn btn-sm btn-danger"
-                                    onclick="return confirm('Are you sure?')">Delete</button>
-                            </form>
-                            <button type="button" class="btn btn-sm btn-success forward-btn"
-                                data-id="{{ $page->id }}">Forward</button>
-                            @elseif($page->status === 'forwarded')
-                            <button class="btn btn-sm btn-success" disabled>Forwarded</button>
-                            @elseif($page->status === 'rejected')
-                            <form action="{{ url('admin/dashboard/collegepage/destroy/' . $page->id) }}" method="POST"
-                                style="display:inline-block;">
-                                @csrf @method('DELETE')
-                                <button type="submit" class="btn btn-sm btn-danger"
-                                    onclick="return confirm('Are you sure?')">Delete</button>
-                            </form>
+                            @if($page->id === $latestId)
+                                @if(in_array($page->status, ['draft', 'reverted']))
+                                <a href="{{ url('admin/dashboard/collegepage/edit/' . $page->id) }}"
+                                    class="btn btn-sm btn-primary">Edit</a>
+                                <form action="{{ url('admin/dashboard/collegepage/destroy/' . $page->id) }}" method="POST"
+                                    style="display:inline-block;">
+                                    @csrf @method('DELETE')
+                                    <button type="submit" class="btn btn-sm btn-danger"
+                                        onclick="return confirm('Are you sure?')">Delete</button>
+                                </form>
+                                <button type="button" class="btn btn-sm btn-success forward-btn"
+                                    data-id="{{ $page->id }}">Forward</button>
+                                @elseif($page->status === 'forwarded')
+                                <button class="btn btn-sm btn-success" disabled>Forwarded</button>
+                                @elseif($page->status === 'rejected')
+                                <form action="{{ url('admin/dashboard/collegepage/destroy/' . $page->id) }}" method="POST"
+                                    style="display:inline-block;">
+                                    @csrf @method('DELETE')
+                                    <button type="submit" class="btn btn-sm btn-danger"
+                                        onclick="return confirm('Are you sure?')">Delete</button>
+                                </form>
+                                @endif
+                            @else
+                                <span class="small badge bg-warning text-white ">Archived</span>
                             @endif
                         </td>
                     </tr>
@@ -97,5 +107,4 @@
         </div>
     </div>
 </div>
-
 @endsection

@@ -6,9 +6,13 @@
 
             <div class="col-md-4">
 
-                <h4>Alipurduar Damanpur Government Polytechnic</h4>
+                <h5 class="h4">{{$college->name}}</h5>
 
-                <p>Plot no 1311-1312, New Alipurduar Road</p>
+                <p>
+                    {{$college->address}} <br>
+                    {{$college->district}} <br>
+                    West Bengal
+                </p>
 
             </div>
 

@@ -116,14 +116,16 @@ class CollegePage extends Controller
         $menus   = $this->getMenus();
         $college = $this->getOperatorCollege();
 
-        $pages = CollegePageModel::where('college_id', $college->id)->get();
+        $pages = CollegePageModel::where('college_id', $college->id)->latest()->get();
 
         foreach ($pages as $page) {
             $page->banner_url          = $this->decryptImage($page->banner);
             $page->principle_image_url = $this->decryptImage($page->principle_image);
         }
 
-        return view('backend.admin.collegePage.viewCollegePage', compact('menus', 'pages'));
+        $latestId = $pages->first()->id ?? null;
+
+        return view('backend.admin.collegePage.viewCollegePage', compact('menus', 'pages', 'latestId'));
     }
 
     // GET: /admin/dashboard/collegepage/show/{id}
@@ -140,16 +142,15 @@ class CollegePage extends Controller
     }
 
     // GET: /admin/dashboard/collegepage/create
-    // GET: /admin/dashboard/collegepage/create
     public function create()
     {
         $menus   = $this->getMenus();
         $college = $this->getOperatorCollege();
 
-        $existing = CollegePageModel::where('college_id', $college->id)->first();
+        $latest = CollegePageModel::where('college_id', $college->id)->latest()->first();
 
-        // Block access if a page already exists and its status is not "rejected"
-        if ($existing && $existing->status !== 'rejected') {
+        // Block access if the latest page exists and its status is not "rejected"
+        if ($latest && $latest->status !== 'rejected') {
             return redirect('admin/dashboard/collegepage/index')
                 ->with('error', 'The page is already inserted and available.');
         }
@@ -190,10 +191,9 @@ class CollegePage extends Controller
             ]
         );
 
-        // ── Single source of truth: check existing row + its status ──
-        $existing = CollegePageModel::where('college_id', $college->id)->first();
+        $latest = CollegePageModel::where('college_id', $college->id)->latest()->first();
 
-        if ($existing && $existing->status !== 'rejected') {
+        if ($latest && $latest->status !== 'rejected') {
             return redirect('admin/dashboard/collegepage/index')
                 ->with('error', 'The page is already inserted and available.');
         }
@@ -201,27 +201,16 @@ class CollegePage extends Controller
         $encryptedBanner         = $this->encryptImage($request, 'banner');
         $encryptedPrincipleImage = $this->encryptImage($request, 'principle_image');
 
-        if ($existing && $existing->status === 'rejected') {
-            $existing->update([
-                'page'               => $request->page,
-                'description'        => $request->description,
-                'banner'             => $encryptedBanner,
-                'principle_image'    => $encryptedPrincipleImage,
-                'principle_message'  => $request->principle_message,
-                'status'             => 'draft',
-                'reject_reason'      => null,
-            ]);
-        } else {
-            CollegePageModel::create([
-                'college_id'         => $college->id,
-                'page'               => $request->page,
-                'description'        => $request->description,
-                'banner'             => $encryptedBanner,
-                'principle_image'    => $encryptedPrincipleImage,
-                'principle_message'  => $request->principle_message,
-                'status'             => 'draft',
-            ]);
-        }
+        // Always create a fresh row — old rejected row stays as history, not overwritten
+        CollegePageModel::create([
+            'college_id'         => $college->id,
+            'page'               => $request->page,
+            'description'        => $request->description,
+            'banner'             => $encryptedBanner,
+            'principle_image'    => $encryptedPrincipleImage,
+            'principle_message'  => $request->principle_message,
+            'status'             => 'draft',
+        ]);
 
         return redirect('admin/dashboard/collegepage/index')->with('success', 'College page saved successfully!');
     }
@@ -253,13 +242,31 @@ class CollegePage extends Controller
             abort(403, 'This page cannot be edited in its current status.');
         }
 
-        $request->validate([
-            'page'               => 'required|string|max:255',
-            'description'        => 'nullable|string',
-            'banner'             => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
-            'principle_image'    => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
-            'principle_message'  => 'nullable|string',
-        ]);
+        $request->validate(
+            [
+                'page' => ['required', 'string', 'max:100', 'in:home,about,contact'],
+                'description' => ['required', 'string', 'min:20', 'max:10000'],
+                'banner' => ['nullable', 'image', 'mimes:jpeg,jpg,png,webp', 'max:2048'],
+                'principle_image' => ['nullable', 'image', 'mimes:jpeg,jpg,png,webp', 'max:2048'],
+                'principle_message' => ['required', 'string', 'min:20', 'max:5000'],
+            ],
+            [
+                'page.required' => 'Please select a page.',
+                'page.in' => 'Invalid page selected.',
+                'description.required' => 'Description is required.',
+                'description.min' => 'Description must contain at least 20 characters.',
+                'description.max' => 'Description cannot exceed 10000 characters.',
+                'banner.image' => 'Banner must be an image.',
+                'banner.mimes' => 'Banner must be jpeg, jpg, png or webp.',
+                'banner.max' => 'Banner image size must not exceed 2 MB.',
+                'principle_image.image' => 'Principal image must be an image.',
+                'principle_image.mimes' => 'Principal image must be jpeg, jpg, png or webp.',
+                'principle_image.max' => 'Principal image size must not exceed 2 MB.',
+                'principle_message.required' => 'Principal message is required.',
+                'principle_message.min' => 'Principal message should contain at least 20 characters.',
+                'principle_message.max' => 'Principal message cannot exceed 5000 characters.',
+            ]
+        );
 
         $encryptedBanner         = $this->encryptImage($request, 'banner', $page->banner);
         $encryptedPrincipleImage = $this->encryptImage($request, 'principle_image', $page->principle_image);

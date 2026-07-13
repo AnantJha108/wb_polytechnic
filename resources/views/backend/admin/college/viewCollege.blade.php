@@ -62,9 +62,12 @@
                                 @endif
                             </td>
                             <td onclick="event.stopPropagation()">
-                                <div class="d-flex">
+                                <div class="d-flex gap-1">
+                                    <a href="{{ url('admin/dashboard/college/viewapprovedpage/' . $college->id) }}"
+                                        class="btn btn-sm btn-success text-nowrap">View Page</a>
+
                                     <a href="{{ url('admin/dashboard/college/edit/' . $college->id) }}"
-                                        class="btn btn-sm btn-primary me-2">Edit</a>
+                                        class="btn btn-sm btn-primary">Edit</a>
 
                                     <form action="{{ url('admin/dashboard/college/destroy/' . $college->id) }}"
                                         method="POST" style="display:inline-block;">

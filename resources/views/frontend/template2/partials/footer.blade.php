@@ -1,33 +1,3 @@
-<section class="message-section">
-
-    <div class="container">
-
-        <div class="row align-items-center">
-
-            <div class="col-md-6">
-
-                <p>
-                    Acharya Prafulla Chandra Ray Polytechnic is a state-of-the-art AICTE approved institute offering
-                    diploma engineering courses.
-                </p>
-
-                <h6>Principal</h6>
-
-            </div>
-
-            <div class="col-md-6 text-center">
-
-                <div class="message-img">
-                    <img src="https://randomuser.me/api/portraits/men/32.jpg" class="img-fluid">
-                </div>
-
-            </div>
-
-        </div>
-
-    </div>
-</section>
-
 
 <!-- Footer -->
 
@@ -39,11 +9,12 @@
 
             <div class="col-md-3">
 
-                <h5>Acharya Prafulla Chandra Ray Polytechnic</h5>
+                <h5 class="h4">{{$college->name}}</h5>
 
                 <p>
-                    188 Raja Subodh Chandra Mallick Road<br>
-                    Jadavpur, Kolkata
+                    {{$college->address}} <br>
+                    {{$college->district}} <br>
+                    West Bengal
                 </p>
 
             </div>

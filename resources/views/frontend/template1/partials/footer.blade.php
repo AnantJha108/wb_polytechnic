@@ -6,10 +6,11 @@
 
             <div class="col-md-4">
 
-                <h5>AJCB Polytechnic</h5>
+                <h5>{{$college->name}}</h5>
 
                 <p>
-                    Deganga, North 24 Parganas
+                    {{$college->address}} <br>
+                    {{$college->district}} <br>
                     West Bengal
                 </p>
 

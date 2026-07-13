@@ -79,24 +79,9 @@ class CollegeController extends Controller
         $college = College::where('slug', $slug)->firstOrFail();
         $template = $college->template;
 
-        $college->logo_url = $this->decryptImage($college->logo);
-
-        $page = CollegePage::where([
-            ['college_id', '=', $college->id],
-            ['page', '=', 'about']
-        ])->first();
-
-        $bannerUrl         = null;
-        $principleImageUrl = null;
-
-        if ($page) {
-            $bannerUrl         = $this->decryptImage($page->banner);
-            $principleImageUrl = $this->decryptImage($page->principle_image);
-        }
-
         return view(
             'frontend.' . $template->template_path . '.pages.about',
-            compact('college', 'page', 'bannerUrl', 'principleImageUrl')
+            compact('college')
         );
     }
 
@@ -104,22 +89,6 @@ class CollegeController extends Controller
     {
         $college = College::where('slug', $slug)->firstOrFail();
         $template = $college->template;
-
-        $college->logo_url = $this->decryptImage($college->logo);
-
-        $page = CollegePage::where([
-            ['college_id', '=', $college->id],
-            ['page', '=', 'contact'],
-            ['status', '=', 'approved']
-        ])->first();
-
-        $bannerUrl         = null;
-        $principleImageUrl = null;
-
-        if ($page) {
-            $bannerUrl         = $this->decryptImage($page->banner);
-            $principleImageUrl = $this->decryptImage($page->principle_image);
-        }
 
         $feedback = Feedback::where('ack_number', $request->ack_no)
             ->where('college_id', $college->id)
@@ -134,7 +103,7 @@ class CollegeController extends Controller
 
         return view(
             'frontend.' . $template->template_path . '.pages.contact',
-            compact('college', 'page', 'bannerUrl', 'principleImageUrl', 'feedback', 'userCount')
+            compact('college', 'feedback', 'userCount')
         );
     }
 }

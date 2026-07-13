@@ -1,6 +1,6 @@
 @extends('frontend.template1.layout.app')
 
-@section('title', 'Acharya Jagadish Chandra Bose Polytechnic')
+@section('title', $college->name)
 
 @section('content')
 @if($page)

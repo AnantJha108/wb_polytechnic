@@ -3,7 +3,6 @@
 @section('title', 'Contact || Acharya Jagadish Chandra Bose Polytechnic')
 
 @section('content')
-@if($page)
 <div>
     @if(session('error'))
     <p style="color:red">{{ session('error') }}</p>
@@ -13,14 +12,14 @@
     <p style="color:green">{{ session('success') }}</p>
     @endif
 </div>
-<div class="contianer mt-5 mb-5">
+<div class="contianer px-5 mt-5 mb-5">
     <section>
         <div>
             <div class="d-flex">
                 <h2>Contact Us || </h2>
                 <h2>{{$college->name }}</h2>
             </div>
-            <p>{{ $page->description }}</p>
+            <p></p>
         </div>
         <div class="row">
             <div class="col-6">
@@ -95,8 +94,7 @@
 
                         @endif
                         @if(isset($feedback))
-                        @if($userCount < 5)
-                        <form class="input-group mt-2" method="POST"
+                        @if($userCount < 5) <form class="input-group mt-2" method="POST"
                             action="{{ route('feedback.send',[$college->slug, $feedback->ack_number]) }}">
                             @csrf
 
@@ -112,18 +110,11 @@
                             </div>
 
                             @endif
-                        @endif
+                            @endif
                     </div>
                 </div>
             </div>
         </div>
     </section>
 </div>
-@else
-
-    <div class="alert alert-warning text-center mt-5">
-        <h5>No data available.</h5>
-    </div>
-
-@endif
 @endsection

@@ -52,28 +52,30 @@
 
                             <div class="col-6 mb-3">
                                 <label>Banner Image</label>
-                                <input type="file" name="banner" class="form-control @error('banner') is-invalid @enderror" accept="image/*">
+                                <input type="file" name="banner" id="bannerInput" class="form-control @error('banner') is-invalid @enderror" accept="image/*">
                                 @error('banner')<div class="invalid-feedback">{{ $message }}</div>@enderror
 
-                                @if($bannerUrl)
-                                    <div class="mt-2">
-                                        <p class="mb-1 text-muted">Current banner:</p>
-                                        <img src="{{ $bannerUrl }}" width="150" height="80" style="object-fit:cover;">
-                                    </div>
-                                @endif
+                                <div class="mt-2">
+                                    <p class="mb-1 text-muted">Current banner:</p>
+                                    <img id="bannerPreview"
+                                         src="{{ $bannerUrl ?? '' }}"
+                                         width="150" height="80"
+                                         style="object-fit:cover; {{ $bannerUrl ? '' : 'display:none;' }}">
+                                </div>
                             </div>
 
                             <div class="col-6 mb-3">
                                 <label>Principal Image</label>
-                                <input type="file" name="principle_image" class="form-control @error('principle_image') is-invalid @enderror" accept="image/*">
+                                <input type="file" name="principle_image" id="principalInput" class="form-control @error('principle_image') is-invalid @enderror" accept="image/*">
                                 @error('principle_image')<div class="invalid-feedback">{{ $message }}</div>@enderror
 
-                                @if($principleImageUrl)
-                                    <div class="mt-2">
-                                        <p class="mb-1 text-muted">Current image:</p>
-                                        <img src="{{ $principleImageUrl }}" width="80" height="80" style="object-fit:cover; border-radius:50%;">
-                                    </div>
-                                @endif
+                                <div class="mt-2">
+                                    <p class="mb-1 text-muted">Current image:</p>
+                                    <img id="principalPreview"
+                                         src="{{ $principleImageUrl ?? '' }}"
+                                         width="80" height="80"
+                                         style="object-fit:cover; border-radius:50%; {{ $principleImageUrl ? '' : 'display:none;' }}">
+                                </div>
                             </div>
 
                             <div class="col-12 mb-3">

@@ -1,6 +1,6 @@
 @extends('frontend.template1.layout.app')
 
-@section('title', 'Acharya Prafulla Chandra Ray Polytechnic')
+@section('title', $college->name)
 
 @section('content')
 <!-- Hero Slider -->

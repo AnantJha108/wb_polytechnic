@@ -42,8 +42,11 @@
                     </div>
                 </div>
 
-                <a href="{{ url('admin/dashboard/collegepage/edit/' . $page->id) }}"
-                    class="btn btn-primary mt-3">Edit</a>
+                @if(in_array($page->status, ['draft', 'reverted']))
+                <a href="{{ url('admin/dashboard/collegepage/edit/' . $page->id) }}" class="btn btn-primary">
+                    Edit
+                </a>
+                @endif
             </div>
         </div>
     </div>

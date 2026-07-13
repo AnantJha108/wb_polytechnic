@@ -1,6 +1,6 @@
 @extends('frontend.template1.layout.app')
 
-@section('title', 'Alipurduar Damanpur Government Polytechnic')
+@section('title', $college->name)
 
 @section('content')
 <!-- Hero Banner -->

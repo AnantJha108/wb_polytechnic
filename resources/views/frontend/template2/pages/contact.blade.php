@@ -3,7 +3,6 @@
 @section('title', 'Contact || Acharya Prafulla Chandra Ray Polytechnic')
 
 @section('content')
-@if($page)
 <div>
     @if(session('error'))
     <p style="color:red">{{ session('error') }}</p>
@@ -20,7 +19,7 @@
                 <h2>Contact Us || </h2>
                 <h2>{{$college->name }}</h2>
             </div>
-            <p>{{ $page->description }}</p>
+            <p></p>
         </div>
         <div class="row">
             <div class="col-6">
@@ -114,11 +113,4 @@
         </div>
     </section>
 </div>
-@else
-
-    <div class="alert alert-warning text-center mt-5">
-        <h5>No data available.</h5>
-    </div>
-
-@endif
 @endsection

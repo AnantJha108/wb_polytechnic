@@ -184,6 +184,32 @@ $(document).ready(function () {
 });
 </script>
 
+{{--in editCollegePage image preview for banner and principle image uploaded by operator change in realtime  --}}
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    function setupPreview(inputId, previewId) {
+        const input = document.getElementById(inputId);
+        const preview = document.getElementById(previewId);
+
+        input.addEventListener('change', function () {
+            const file = this.files[0];
+            if (!file) return;
+
+            if (preview.dataset.blob === 'true') {
+                URL.revokeObjectURL(preview.src);
+            }
+
+            preview.src = URL.createObjectURL(file);
+            preview.dataset.blob = 'true';
+            preview.style.display = 'inline-block';
+        });
+    }
+
+    setupPreview('bannerInput', 'bannerPreview');
+    setupPreview('principalInput', 'principalPreview');
+});
+</script>
+
 {{-- college page forward/reject/revert logic --}}
 <script>
     $(document).ready(function () {
