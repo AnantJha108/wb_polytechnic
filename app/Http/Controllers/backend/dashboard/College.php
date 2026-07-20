@@ -291,26 +291,6 @@ class College extends Controller
         return redirect()->back()->with('success', 'College and all associated users deleted.');
     }
 
-    // GET: /admin/dashboard/college/viewapprovedpage/{id}
-    public function viewApprovedPage($id)
-    {
-        $menus   = $this->getMenus();
-        $college = CollegeModel::findOrFail($id);
-
-        $page = CollegePageModel::where('college_id', $college->id)
-            ->where('status', 'approved')
-            ->latest()
-            ->first();
-
-        if ($page) {
-            $page->banner_url          = $this->decryptImage($page->banner);
-            $page->principle_image_url = $this->decryptImage($page->principle_image);
-        }
-
-        return view('backend.admin.college.approvedPageView', compact('menus', 'college', 'page'));
-    }
-
-
     // GET: /admin/dashboard/college/collegepagestatus
     public function collegePageStatus()
     {

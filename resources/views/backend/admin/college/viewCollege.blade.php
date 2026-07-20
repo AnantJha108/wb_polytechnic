@@ -63,9 +63,6 @@
                             </td>
                             <td onclick="event.stopPropagation()">
                                 <div class="d-flex gap-1">
-                                    <a href="{{ url('admin/dashboard/college/viewapprovedpage/' . $college->id) }}"
-                                        class="btn btn-sm btn-success text-nowrap">View Page</a>
-
                                     <a href="{{ url('admin/dashboard/college/edit/' . $college->id) }}"
                                         class="btn btn-sm btn-primary">Edit</a>
 

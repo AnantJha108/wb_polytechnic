@@ -43,6 +43,129 @@
     });
 </script>
 
+
+<script>
+$(function () {
+    $('.delete-file-btn').on('click', function () {
+        if (!confirm('Remove this file?')) return;
+        const id = $(this).data('id');
+        const form = $('<form>', { method: 'POST', action: '{{ url("admin/dashboard/newsEvent/deleteFile") }}/' + id });
+        form.append('<input type="hidden" name="_token" value="{{ csrf_token() }}">');
+        form.append('<input type="hidden" name="_method" value="DELETE">');
+        $('body').append(form);
+        form.submit();
+    });
+});
+</script>
+
+{{-- approve/reject/revert for News and event or notice and announcement --}}
+<script>
+$(function () {
+    const itemId = $('#itemCard').data('item-id');
+    function post(url, data, cb) {
+        $.ajax({
+            url: url, method: 'POST',
+            data: Object.assign({ _token: '{{ csrf_token() }}' }, data),
+            success: cb,
+            error: xhr => alert(xhr.responseJSON?.message || 'Something went wrong.')
+        });
+    }
+    $('.approve-btn').on('click', () => post('{{ url("admin/dashboard/newsEventReview/approve") }}/' + itemId, {}, r => r.success && location.reload()));
+    $('.reject-submit-btn').on('click', () => post('{{ url("admin/dashboard/newsEventReview/reject") }}/' + itemId, { reason: $('#rejectReason').val() }, r => r.success && location.reload()));
+    $('.revert-submit-btn').on('click', () => post('{{ url("admin/dashboard/newsEventReview/revert") }}/' + itemId, { reason: $('#revertReason').val() }, r => r.success && location.reload()));
+});
+</script>
+
+
+{{-- forward News and event or notice and announcement --}}
+<script>
+$(function () {
+    $('.forward-btn').on('click', function () {
+        const id = $(this).data('id');
+        $.ajax({
+            url: '{{ url("admin/dashboard/newsEvent/forward") }}/' + id,
+            method: 'POST',
+            data: { _token: '{{ csrf_token() }}' },
+            success: function (res) {
+                if (res.success) location.reload();
+                else alert(res.message);
+            }
+        });
+    });
+});
+</script>
+
+
+{{-- forward about page verification to principle --}}
+<script>
+$(function () {
+    $('.forward-btn').on('click', function () {
+        const id = $(this).data('id');
+        $.ajax({
+            url: '{{ url("admin/dashboard/aboutPage/forward") }}/' + id,
+            method: 'POST',
+            data: { _token: '{{ csrf_token() }}' },
+            success: function (res) {
+                if (res.success) location.reload();
+                else alert(res.message);
+            }
+        });
+    });
+
+    $('.delete-btn').on('click', function () {
+        if (!confirm('Delete this About page? This cannot be undone.')) return;
+
+        const id = $(this).data('id');
+        const form = $('<form>', {
+            method: 'POST',
+            action: '{{ url("admin/dashboard/aboutPage/destroy") }}/' + id
+        }).append('@csrf').append('@method("DELETE")');
+
+        $('body').append(form);
+        form.submit();
+    });
+});
+</script>
+
+{{-- approve/reject/revert the About PAGE --}}
+<script>
+$(function () {
+    const pageId = $('#pageCard').data('page-id');
+
+    function post(url, data, cb) {
+        $.ajax({
+            url: url,
+            method: 'POST',
+            data: Object.assign({ _token: '{{ csrf_token() }}' }, data),
+            success: cb,
+            error: function (xhr) {
+                alert(xhr.responseJSON?.message || 'Something went wrong.');
+            }
+        });
+    }
+
+    $('.approve-btn').on('click', function () {
+        post('{{ url("admin/dashboard/aboutPageReview/approve") }}/' + pageId, {}, function (res) {
+            if (res.success) location.reload();
+        });
+    });
+
+    $('.reject-submit-btn').on('click', function () {
+        const reason = $('#rejectReason').val();
+        post('{{ url("admin/dashboard/aboutPageReview/reject") }}/' + pageId, { reason }, function (res) {
+            if (res.success) location.reload();
+        });
+    });
+
+    $('.revert-submit-btn').on('click', function () {
+        const reason = $('#revertReason').val();
+        post('{{ url("admin/dashboard/aboutPageReview/revert") }}/' + pageId, { reason }, function (res) {
+            if (res.success) location.reload();
+        });
+    });
+});
+</script>
+
 {{-- college page approval logic --}}
 <script>
     $(document).ready(function () {
@@ -113,6 +236,77 @@
                 $('#alertBox').html('<div class="alert alert-danger">' + (xhr.responseJSON?.message || 'Error') + '</div>');
             });
     });
+});
+</script>
+
+{{-- in change password matching in new password and confirm new password  --}}
+<script>
+$(function () {
+
+    // Live match check between New Password and Confirm Password
+    function checkMatch() {
+        const newPass = $('#new_password').val();
+        const confirmPass = $('#new_password_confirmation').val();
+        const $status = $('#match_status');
+
+        if (confirmPass.length === 0) {
+            $status.text('').removeClass('text-success text-danger');
+            return;
+        }
+
+        if (newPass === confirmPass) {
+            $status.text('✔ Passwords match').removeClass('text-danger').addClass('text-success');
+        } else {
+            $status.text('✘ Passwords do not match').removeClass('text-success').addClass('text-danger');
+        }
+    }
+
+    $('#new_password, #new_password_confirmation').on('keyup', checkMatch);
+
+    // AJAX form submit
+    $('#changePasswordForm').on('submit', function (e) {
+        e.preventDefault();
+
+        // Clear old errors
+        $('.invalid-feedback').text('');
+        $('#cp-alert-box').empty();
+
+        const $btn = $('#submitBtn');
+        $btn.prop('disabled', true).text('Updating...');
+
+        $.ajax({
+            url: $(this).attr('action'),
+            method: 'POST',
+            data: $(this).serialize(),
+            success: function (res) {
+                $('#cp-alert-box').html(
+                    '<div class="alert alert-success">' + res.message + '</div>'
+                );
+                $('#changePasswordForm')[0].reset();
+                $('#match_status').text('').removeClass('text-success text-danger');
+            },
+            error: function (xhr) {
+                if (xhr.status === 422) {
+                    const errors = xhr.responseJSON.errors;
+                    $.each(errors, function (field, messages) {
+                        $('#err_' + field).text(messages[0]);
+                    });
+                } else if (xhr.status === 400) {
+                    $('#cp-alert-box').html(
+                        '<div class="alert alert-danger">' + xhr.responseJSON.message + '</div>'
+                    );
+                } else {
+                    $('#cp-alert-box').html(
+                        '<div class="alert alert-danger">Something went wrong. Please try again.</div>'
+                    );
+                }
+            },
+            complete: function () {
+                $btn.prop('disabled', false).text('Update Password');
+            }
+        });
+    });
+
 });
 </script>
 

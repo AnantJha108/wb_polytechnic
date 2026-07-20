@@ -131,50 +131,115 @@
     </div>
 </section>
 
-<!-- Notice Section -->
+<!-- NEWS SECTION -->
 
-<section class="py-5">
+    <section class="container py-5">
 
-    <div class="container">
+        <div class="row">
 
-        <h2 class="text-center mb-5">
-            Our <span class="text-warning">Notice & Announcement</span>
-        </h2>
+            <div class="col-md-6">
 
-        <div class="notice-box">
+                <h4 class="text-success">News & Events</h4>
 
-            <h5>Notice of Assessor</h5>
-            <p>Notice from Council</p>
+                @forelse ($newsItems ?? [] as $item)
+                <div class="card news-card p-3 mb-3">
+                    <h6>{{ $item->title }}</h6>
+                    <p>{{ Str::limit($item->description, 150) }}</p>
 
-            <a href="#" class="btn btn-outline-warning">Download PDF</a>
+                    @if ($item->files->isNotEmpty())
+                    @foreach ($item->files as $file)
+                    <a href="{{ route('newsEvent.download', $file->id) }}" class="btn btn-success btn-sm mb-1">
+                        Download {{ $item->files->count() > 1 ? '(' . $file->original_name . ')' : '' }}
+                    </a>
+                    @endforeach
+                    @endif
+                </div>
+                @empty
+                <p class="text-muted">No news or events available right now.</p>
+                @endforelse
+
+            </div>
+
+
+            <div class="col-md-6">
+
+                <h4 class="text-success">Notice & Announcement</h4>
+
+                @forelse ($noticeItems ?? [] as $item)
+                <div class="card news-card p-3 mb-3">
+                    <h6>{{ $item->title }}</h6>
+                    <p>{{ Str::limit($item->description, 150) }}</p>
+
+                    @if ($item->files->isNotEmpty())
+                    @foreach ($item->files as $file)
+                    <a href="{{ route('newsEvent.download', $file->id) }}" class="btn btn-success btn-sm mb-1">
+                        Download {{ $item->files->count() > 1 ? '(' . $file->original_name . ')' : '' }}
+                    </a>
+                    @endforeach
+                    @endif
+                </div>
+                @empty
+                <p class="text-muted">No notices or announcements right now.</p>
+                @endforelse
+
+            </div>
 
         </div>
 
-    </div>
-</section>
+    </section>
 
-<!-- News Section -->
+        <div class="row">
 
-<section class="py-5 bg-light">
+            <div class="col-md-6">
 
-    <div class="container">
+                <h4 class="text-success">News & Events</h4>
 
-        <h2 class="text-center mb-5">
-            Upcoming <span class="text-warning">News & Events</span>
-        </h2>
+                @forelse ($newsItems ?? [] as $item)
+                <div class="card news-card p-3 mb-3">
+                    <h6>{{ $item->title }}</h6>
+                    <p>{{ Str::limit($item->description, 150) }}</p>
 
-        <div class="notice-box">
+                    @if ($item->files->isNotEmpty())
+                    @foreach ($item->files as $file)
+                    <a href="{{ route('newsEvent.download', $file->id) }}" class="btn btn-success btn-sm mb-1">
+                        Download {{ $item->files->count() > 1 ? '(' . $file->original_name . ')' : '' }}
+                    </a>
+                    @endforeach
+                    @endif
+                </div>
+                @empty
+                <p class="text-muted">No news or events available right now.</p>
+                @endforelse
 
-            <h5>National Webinar on Data Dependant Society</h5>
+            </div>
 
-            <p>Registration Link Available</p>
 
-            <a class="btn btn-outline-warning">Download PDF</a>
+            <div class="col-md-6">
+
+                <h4 class="text-success">Notice & Announcement</h4>
+
+                @forelse ($noticeItems ?? [] as $item)
+                <div class="card news-card p-3 mb-3">
+                    <h6>{{ $item->title }}</h6>
+                    <p>{{ Str::limit($item->description, 150) }}</p>
+
+                    @if ($item->files->isNotEmpty())
+                    @foreach ($item->files as $file)
+                    <a href="{{ route('newsEvent.download', $file->id) }}" class="btn btn-success btn-sm mb-1">
+                        Download {{ $item->files->count() > 1 ? '(' . $file->original_name . ')' : '' }}
+                    </a>
+                    @endforeach
+                    @endif
+                </div>
+                @empty
+                <p class="text-muted">No notices or announcements right now.</p>
+                @endforelse
+
+            </div>
 
         </div>
 
-    </div>
-</section>
+    </section>
 
 <!-- Principal Message -->
 

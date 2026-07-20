@@ -34,7 +34,7 @@
                 <li class="nav-item"><a class="nav-link" href="{{ url($college->slug) }}">Home</a></li>
                 <li class="nav-item"><a class="nav-link" href="{{route('poly.about',$college->slug) }}">About</a></li>
                 <li class="nav-item"><a class="nav-link" href="{{route('poly.contact',$college->slug) }}">Contact</a></li>
-
+                <li class="nav-item"><a class="nav-link" href="{{route('poly.feedback',$college->slug) }}">Feedback</a> </li>
             </ul>
 
         </div>

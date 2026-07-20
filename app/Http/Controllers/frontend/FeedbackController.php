@@ -37,7 +37,7 @@ class FeedbackController extends Controller
             ->where('page', 'contact')
             ->first();
 
-        return view('frontend.' . $template->template_path . '.pages.contact', compact('college', 'feedback', 'page','userCount'));
+        return view('frontend.' . $template->template_path . '.pages.feedback', compact('college', 'feedback', 'page','userCount'));
     }
 
     // STORE FEEDBACK

@@ -4,17 +4,18 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 
-class FeedbackMessage extends Model
+class NewsEventLog extends Model
 {
     protected $fillable = [
-        'feedback_id',
-        'sender',
+        'news_event_id',
+        'action',
+        'reason',
         'performed_by',
-        'message',
+        'ip_address',
     ];
 
     public function performer()
     {
-        return $this->belongsTo(\App\Models\User::class, 'performed_by');
+        return $this->belongsTo(User::class, 'performed_by');
     }
 }

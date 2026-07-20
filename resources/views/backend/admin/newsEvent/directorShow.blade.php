@@ -1,0 +1,101 @@
+@extends('backend.layout.app')
+@section('title', $item->title)
+@section('content')
+<div class="row" style="height:100vh; overflow:hidden;">
+    @include('backend.partials.side')
+    <div class="col d-flex flex-column" style="height:100vh; overflow:hidden;">
+
+        <div class="p-3 border-bottom bg-white" style="flex-shrink:0;">
+            <a href="{{ url()->previous() }}" class="btn btn-sm btn-secondary">← Back</a>
+        </div>
+
+        <div class="row flex-grow-1" style="overflow:hidden;">
+
+            {{-- LEFT: Item details --}}
+            <div class="col-md-8 h-100" style="overflow-y:auto;">
+                <div class="p-3">
+                    <div class="card">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between align-items-start mb-3">
+                                <div>
+                                    <h2 class="h4 mb-1">{{ $item->title }}</h2>
+                                    <span class="badge
+                                        @if($item->status == 'draft') bg-secondary
+                                        @elseif($item->status == 'forwarded') bg-warning text-dark
+                                        @elseif($item->status == 'approved') bg-success
+                                        @elseif($item->status == 'rejected') bg-danger
+                                        @else bg-info @endif">
+                                        {{ ucfirst($item->status) }}
+                                    </span>
+                                </div>
+                            </div>
+
+                            <p class="text-muted">
+                                {{ $item->college->name }} —
+                                {{ $item->type === 'news_events' ? 'News & Events' : 'Notice & Announcement' }} —
+                                {{ $item->created_at->format('d M Y') }}
+                            </p>
+
+                            @if ($item->status === 'approved')
+                            <div class="alert alert-success">This item has been approved and is live.</div>
+                            @elseif ($item->status === 'rejected' && $item->reject_reason)
+                            <div class="alert alert-danger"><strong>Rejected — Reason:</strong> {{ $item->reject_reason
+                                }}</div>
+                            @elseif ($item->status === 'reverted' && $item->revert_reason)
+                            <div class="alert alert-warning"><strong>Reverted — Reason:</strong> {{ $item->revert_reason
+                                }}</div>
+                            @endif
+
+                            <h6 class="mt-4">Description</h6>
+                            <p>{!! nl2br(e($item->description)) !!}</p>
+
+                            @if ($item->files->isNotEmpty())
+                            <h6 class="mt-4">Attached Files</h6>
+                            <ul class="list-group">
+                                @foreach ($item->files as $file)
+                                <li class="list-group-item">{{ $file->original_name }}</li>
+                                @endforeach
+                            </ul>
+                            @endif
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {{-- RIGHT: Activity Log --}}
+            <div class="col-md-4 h-100 border-start" style="overflow-y:auto;">
+                <div class="p-3">
+                    <h6 class="mb-3">Activity Log</h6>
+
+                    @if ($logs->isNotEmpty())
+                    <div class="d-flex flex-column gap-2">
+                        @foreach ($logs as $log)
+                        <div class="border rounded p-2 small">
+                            <div class="d-flex justify-content-between">
+                                <span class="fw-semibold
+                                            @if($log->action == 'approve') text-success
+                                            @elseif($log->action == 'reject') text-danger
+                                            @elseif($log->action == 'revert') text-warning
+                                            @else text-secondary @endif">
+                                    {{ ucfirst($log->action) }}
+                                </span>
+                                <span class="text-muted">{{ $log->created_at->format('d M, h:i A') }}</span>
+                            </div>
+                            <div class="text-muted">By: {{ $log->performer->username ?? 'N/A' }}</div>
+                            <div class="text-muted">IP: {{ $log->ip_address }}</div>
+                            @if ($log->reason)
+                            <div class="mt-1">{{ $log->reason }}</div>
+                            @endif
+                        </div>
+                        @endforeach
+                    </div>
+                    @else
+                    <p class="text-muted small">No activity yet.</p>
+                    @endif
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+@endsection

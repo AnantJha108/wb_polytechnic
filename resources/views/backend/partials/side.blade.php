@@ -14,7 +14,7 @@
                 <i class="bi bi-chevron-down ms-auto"></i>
             </a>
 
-            <ul id="menu-{{ $parent->id }}" class="nav-content collapse list-unstyled ps-3">
+            <ul id="menu-{{ $parent->id }}" class="nav-content collapse list-unstyled ">
 
                 @foreach($parent->children as $child)
                 @php
@@ -53,9 +53,13 @@
     </ul>
     <hr>
     <div>
-        <form method="POST" action="{{route('admin.logout')}}">
+        <a href="{{ route('admin.change.password') }}" class="btn btn-outline-light w-100 mb-2">
+            Change Password
+        </a>
+
+        <form action="{{ route('admin.logout') }}" method="POST">
             @csrf
-            <input type="submit" class="btn btn-secondary w-100" value="Logout">
+            <button type="submit" class="btn btn-secondary w-100">Logout</button>
         </form>
     </div>
 </div>

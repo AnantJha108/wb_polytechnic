@@ -134,17 +134,22 @@
 
                 <h4 class="text-success">News & Events</h4>
 
-                <div class="card news-card p-3">
+                @forelse ($newsItems ?? [] as $item)
+                <div class="card news-card p-3 mb-3">
+                    <h6>{{ $item->title }}</h6>
+                    <p>{{ Str::limit($item->description, 150) }}</p>
 
-                    <h6>Student Grievance Redressal Link</h6>
-
-                    <p>
-                        Student grievance redressal link of department of technical education.
-                    </p>
-
-                    <button class="btn btn-success btn-sm">Download</button>
-
+                    @if ($item->files->isNotEmpty())
+                    @foreach ($item->files as $file)
+                    <a href="{{ route('newsEvent.download', $file->id) }}" class="btn btn-success btn-sm mb-1">
+                        Download {{ $item->files->count() > 1 ? '(' . $file->original_name . ')' : '' }}
+                    </a>
+                    @endforeach
+                    @endif
                 </div>
+                @empty
+                <p class="text-muted">No news or events available right now.</p>
+                @endforelse
 
             </div>
 
@@ -153,17 +158,22 @@
 
                 <h4 class="text-success">Notice & Announcement</h4>
 
-                <div class="card news-card p-3">
+                @forelse ($noticeItems ?? [] as $item)
+                <div class="card news-card p-3 mb-3">
+                    <h6>{{ $item->title }}</h6>
+                    <p>{{ Str::limit($item->description, 150) }}</p>
 
-                    <h6>Summer Vacation Notice</h6>
-
-                    <p>
-                        SUMMER VACATION from 28 April to 10 June.
-                    </p>
-
-                    <button class="btn btn-success btn-sm">Download</button>
-
+                    @if ($item->files->isNotEmpty())
+                    @foreach ($item->files as $file)
+                    <a href="{{ route('newsEvent.download', $file->id) }}" class="btn btn-success btn-sm mb-1">
+                        Download {{ $item->files->count() > 1 ? '(' . $file->original_name . ')' : '' }}
+                    </a>
+                    @endforeach
+                    @endif
                 </div>
+                @empty
+                <p class="text-muted">No notices or announcements right now.</p>
+                @endforelse
 
             </div>
 

@@ -10,11 +10,13 @@ use Illuminate\Support\Facades\Route;
 Route::get('/', [CollegeController::class, 'index']);
 
 Route::get('/{slug}', [CollegeController::class, 'openCollege']);
+Route::get('/news-event/download/{fileId}', [CollegeController::class, 'downloadNewsEventFile'])->name('newsEvent.download');
 
 Route::get('/about/{slug}', [CollegeController::class, 'aboutPage'])->name('poly.about');
 Route::get('/contact/{slug}', [CollegeController::class, 'contactPage'])->name('poly.contact');
+Route::get('/feedback/{slug}', [CollegeController::class, 'feedbackPage'])->name('poly.feedback');
 
-Route::post('/contact/submit-feedback/{slug}', [FeedbackController::class, 'store'])->name('feedback.store');
+Route::post('/feedback/submit-feedback/{slug}', [FeedbackController::class, 'store'])->name('feedback.store');
 
 Route::match(['get', 'post'], '/contact/search-feedback/{slug}', [FeedbackController::class, 'searchFeedback'])->name('feedback.search');
 
@@ -36,6 +38,12 @@ Route::get('/admin/login/refresh_captcha', [AuthController::class, 'refreshCaptc
 //admin routes
 Route::middleware(['auth'])->group(function () {
     Route::get('admin/dashboard', [AdminController::class, 'dashboard'])->name('admin.dashboard');
+
+    // Change Password
+    Route::get('admin/change-password', [AuthController::class, 'showChangePassword'])->name('admin.change.password');
+    Route::post('admin/change-password', [AuthController::class, 'changePassword'])->name('admin.change.password.submit');
+
+    
     // Inside your admin auth middleware group
     Route::any('admin/dashboard/{path}', [ \App\Http\Controllers\backend\DynamicPageController::class,'handle'])->where('path', '.*');
     // Route::any('{slug?}/{id?}', [AdminController::class, 'handle'])->middleware(['auth', 'menu.access']);

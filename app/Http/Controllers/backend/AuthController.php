@@ -5,17 +5,45 @@ namespace App\Http\Controllers\backend;
 use Captcha;
 use App\Http\Controllers\Controller;
 use App\Models\College;
+use App\Models\Menu;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Validator;
 
 class AuthController extends Controller
 {
     public function refreshCaptcha()
     {
         return response()->json(['captcha' => Captcha::src()]);
+    }
+
+    private function getMenus()
+    {
+        $user = Auth::user();
+        if (!$user->master_id) return collect();
+
+        $menuIds = DB::table('menu_user_maps')
+            ->where('master_id', $user->master_id)
+            ->pluck('menu_id')
+            ->toArray();
+
+        if (empty($menuIds)) return collect();
+
+        $childMenus = Menu::whereIn('id', $menuIds)
+            ->where('menu_id', '!=', 0)
+            ->get()
+            ->groupBy('menu_id');
+
+        return Menu::where('menu_id', 0)->get()
+            ->filter(fn($parent) => isset($childMenus[$parent->id]))
+            ->map(function ($parent) use ($childMenus) {
+                $parent->children = $childMenus[$parent->id];
+                return $parent;
+            });
     }
 
 
@@ -93,8 +121,8 @@ class AuthController extends Controller
                 );
             }
         }
-        
-        
+
+
         if (!Hash::check($request->password, $user->password)) {
 
             $attempts = ($user->login_attempts ?? 0) + 1;
@@ -160,6 +188,57 @@ class AuthController extends Controller
         Auth::login($user);
 
         return redirect()->route('admin.dashboard');
+    }
+
+
+    public function showChangePassword()
+    {
+        $menus = $this->getMenus();
+        return view('backend.auth.changePassword', compact('menus'));
+    }
+
+    public function changePassword(Request $request)
+    {
+        $user = Auth::user();
+
+        $validator = Validator::make(
+            $request->all(),
+            [
+                'current_password' => ['required'],
+                'new_password' => [
+                    'required',
+                    'min:8',
+                    'different:current_password',
+                    'confirmed',
+                    'regex:/[A-Z]/',
+                    'regex:/[a-z]/',
+                    'regex:/[0-9]/',
+                    'regex:/[@$!%*#?&]/',
+                ],
+            ],
+            [
+                'current_password.required' => 'Please enter your current password.',
+                'new_password.required' => 'Please enter a new password.',
+                'new_password.min' => 'New password must be at least 8 characters.',
+                'new_password.different' => 'New password must be different from current password.',
+                'new_password.confirmed' => 'New password and confirm password do not match.',
+                'new_password.regex' => 'Password must include uppercase, lowercase, number and special character.',
+            ]
+        );
+
+        if ($validator->fails()) {
+            return response()->json(['errors' => $validator->errors()], 422);
+        }
+
+        if (!Hash::check($request->current_password, $user->password)) {
+            return response()->json(['message' => 'Current password is incorrect.'], 400);
+        }
+
+        $user->update([
+            'password' => Hash::make($request->new_password),
+        ]);
+
+        return response()->json(['message' => 'Password changed successfully!']);
     }
 
     // Logout

@@ -1,112 +1,60 @@
-@extends('frontend.template2.layout.app')
+@extends('frontend.template1.layout.app')
 
-@section('title', 'Contact || Acharya Prafulla Chandra Ray Polytechnic')
+@section('title', 'Contact || ' . $college->name)
 
 @section('content')
-<div>
-    @if(session('error'))
-    <p style="color:red">{{ session('error') }}</p>
-    @endif
-
-    @if(session('success'))
-    <p style="color:green">{{ session('success') }}</p>
-    @endif
-</div>
-<div class="contianer mt-5 mb-5">
+<div class="container px-5 mt-5 mb-5">
     <section>
-        <div>
-            <div class="d-flex">
-                <h2>Contact Us || </h2>
-                <h2>{{$college->name }}</h2>
-            </div>
-            <p></p>
+        <div class="d-flex mb-4">
+            <h2>Contact || </h2>
+            <h2>{{ $college->name }}</h2>
         </div>
+
         <div class="row">
-            <div class="col-6">
-                <div class="card">
-                    <div class="card-header">
-                        <h4>Feedback Form</h4>
-                    </div>
-                    <div class="card-body">
-                        <form method="POST" action="{{ route('feedback.store',$college->slug) }}">
-                            @csrf
-                            <div class="mb-3">
-                                <label>Name</label><br>
-                                <input type="text" placeholder="Enter name" class="form-control" name="name">
-                            </div>
+            <div class="col-md-6">
+                <div class="card p-4 h-100">
+                    <h4 class="mb-4">Get in Touch</h4>
 
-                            <div class="mb-3">
-                                <label>Email</label><br>
-                                <input type="email" placeholder="Enter email" class="form-control" name="email">
-                            </div>
-
-                            <div class="mb-3">
-                                <label>Message</label><br>
-                                <textarea class="form-control" placeholder="Enter message" name="message"></textarea>
-                            </div>
-
-                            <button type="submit" class="btn btn-success">Submit</button>
-
-                        </form>
-                    </div>
-                </div>
-            </div>
-            <div class="col-6">
-                <div class="card">
-                    <div class="card-body">
-                        <form method="GET" class="input-group" action="{{route('feedback.search',$college->slug) }}">
-                            @csrf
-                            <input type="text" class="form-control" name="ack_number" placeholder="Enter ACK Number">
-                            <button type="submit" class="btn btn-info">Search</button>
-                        </form>
-                        @if(isset($feedback))
-                        <h6 class="mt-2">Chat (Acknowledgement Number: {{ $feedback->ack_number }})</h6>
-
-                        <div style="border:1px solid #ccc; padding:10px; height:300px; overflow-y:scroll">
-                            <div style="text-align:right; margin:5px;">
-                                <span style="background:#dcf8c6; padding:8px; border-radius:10px;">
-                                    {{ $feedback->message }}
-                                </span>
-                            </div>
-                            @foreach($feedback->messages as $msg)
-
-                            @if($msg->sender == 'user')
-
-                            <div class="mt-4" style="text-align:right; margin:5px;">
-                                <span class="p-2" style="background:#dcf8c6;  border-radius:10px;">
-                                    {{ $msg->message }}
-                                </span>
-                            </div>
-
-                            @else
-
-                            <div style="text-align:left; margin:5px;">
-                                <span style="background:#f1f0f0; padding:8px; border-radius:10px;">
-                                    {{ $msg->message }}
-                                </span>
-                            </div>
-
-                            @endif
-
-                            @endforeach
-
+                    <div class="d-flex align-items-start mb-3">
+                        <i class="bi bi-geo-alt-fill fs-4 me-3 text-primary"></i>
+                        <div>
+                            <strong>Address</strong>
+                            <p class="mb-0">
+                                {{ $college->address ?? 'Address not available' }}
+                                @if ($college->district)
+                                    <br>{{ $college->district }}
+                                @endif
+                                <br>West Bengal
+                            </p>
                         </div>
+                    </div>
 
-                        @endif
+                    <div class="d-flex align-items-start mb-3">
+                        <i class="bi bi-telephone-fill fs-4 me-3 text-primary"></i>
+                        <div>
+                            <strong>Phone</strong>
+                            <p class="mb-0">
+                                @if ($college->contact_no)
+                                    <a class="text-decoration-none text-dark" href="tel:{{ $college->contact_no }}">{{ $college->contact_no }}</a>
+                                @else
+                                    Not available
+                                @endif
+                            </p>
+                        </div>
+                    </div>
 
-                        @if(isset($feedback))
-
-                        <form class="input-group mt-2" method="POST"
-                            action="{{ route('feedback.send',[$college->slug, $feedback->ack_number]) }}">
-                            @csrf
-
-                            <input type="text" class="form-control" name="message" required placeholder="Type message">
-
-                            <button class="btn btn-success" type="submit">Send</button>
-
-                        </form>
-
-                        @endif
+                    <div class="d-flex align-items-start mb-3">
+                        <i class="bi bi-envelope-fill fs-4 me-3 text-primary"></i>
+                        <div>
+                            <strong>Email</strong>
+                            <p class="mb-0">
+                                @if ($college->email)
+                                    <a class="text-decoration-none text-dark" href="mailto:{{ $college->email }}">{{ $college->email }}</a>
+                                @else
+                                    Not available
+                                @endif
+                            </p>
+                        </div>
                     </div>
                 </div>
             </div>
