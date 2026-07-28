@@ -133,7 +133,6 @@ class NewsEvent extends Controller
         );
 
         if ($validator->fails()) {
-            // Stash any individually-valid files so they aren't lost on redirect
             $tempFiles = $request->input('temp_files', []);
 
             if ($request->hasFile('files')) {
@@ -229,8 +228,13 @@ class NewsEvent extends Controller
 
         $validator = Validator::make(
             $request->all(),
-            $this->fileValidationRules(),
-            $this->fileValidationMessages()
+            array_merge($this->fileValidationRules(), [
+                'replace_file.*' => ['nullable', 'file', 'mimes:doc,docx,pdf,ppt,pptx', 'max:5120'],
+            ]),
+            array_merge($this->fileValidationMessages(), [
+                'replace_file.*.mimes' => 'Replacement file must be Word, PDF, or PowerPoint.',
+                'replace_file.*.max'   => 'Replacement file must not exceed 5 MB.',
+            ])
         );
 
         if ($validator->fails()) {
@@ -267,6 +271,31 @@ class NewsEvent extends Controller
             'status'      => 'draft', // reverted → draft after edit
         ]);
 
+        // Replace only the specific existing file(s) the Operator chose to edit,
+        // via inputs named replace_file[{existingFileId}]
+        if ($request->hasFile('replace_file')) {
+            foreach ($request->file('replace_file') as $existingFileId => $newFile) {
+                $existingFile = NewsEventFile::where('news_event_id', $item->id)
+                    ->where('id', $existingFileId)
+                    ->first();
+
+                if ($existingFile && $newFile) {
+                    // delete the OLD encrypted file from disk to avoid orphaned files
+                    if ($existingFile->encrypted_path) {
+                        Storage::disk('local')->delete($existingFile->encrypted_path);
+                    }
+
+                    // overwrite that same DB row with the new file's info
+                    $existingFile->update([
+                        'original_name'  => $newFile->getClientOriginalName(),
+                        'mime_type'      => $newFile->getMimeType(),
+                        'encrypted_path' => $this->storeEncryptedFile($newFile),
+                    ]);
+                }
+            }
+        }
+
+        // Promote any files carried over from a previous failed attempt
         foreach ($request->input('temp_files', []) as $temp) {
             if (Storage::disk('local')->exists($temp['path'])) {
                 $raw       = Storage::disk('local')->get($temp['path']);
@@ -284,6 +313,7 @@ class NewsEvent extends Controller
             }
         }
 
+        // Attach brand new additional files
         if ($request->hasFile('files')) {
             foreach ($request->file('files') as $file) {
                 NewsEventFile::create([

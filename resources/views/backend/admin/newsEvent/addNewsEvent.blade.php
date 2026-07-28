@@ -55,8 +55,19 @@
 
                     <div class="mb-3">
                         <label>Attach Files (Word, PDF, PPT — max 5 MB each, multiple allowed)</label>
-                        <input type="file" name="files[]" multiple
-                            class="form-control @error('files.*') is-invalid @enderror">
+
+                        <div id="fileInputsContainer">
+                            <div class="input-group mb-2 file-input-row">
+                                <input type="file" name="files[]"
+                                    class="form-control @error('files.*') is-invalid @enderror">
+                                <button type="button" class="btn btn-outline-danger remove-file-row"
+                                    style="display:none;">Remove</button>
+                            </div>
+                        </div>
+
+                        <button type="button" id="addMoreFileBtn" class="btn btn-sm btn-outline-primary mt-1">+ Add
+                            More</button>
+
                         @error('files.*')<div class="invalid-feedback d-block">{{ $message }}</div>@enderror
 
                         @if (session('temp_files'))
@@ -78,6 +89,7 @@
                         </div>
                         @endif
                     </div>
+
 
                     <button type="submit" class="btn btn-primary">Save</button>
                 </form>

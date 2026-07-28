@@ -44,8 +44,243 @@
 </script>
 
 
+{{-- create new posting section when click on Add new Posting section --}}
 <script>
-$(function () {
+    $('#addPostingHistoryBtn').on('click', function () {
+    const container = $('#postingHistoryContainer');
+    const blocks = container.find('.posting-history-block');
+    const maxBlocks = parseInt(container.data('max'), 10);
+    if (blocks.length >= maxBlocks) return;
+
+    const oldIndex = 0; // we always clone from the first block, which is always index 0
+    const newIndex = blocks.length;
+    const template = blocks.first().clone();
+
+    // Rename every id that contains _{oldIndex}_ or ends in _{oldIndex}
+    template.find('[id]').each(function () {
+        const id = $(this).attr('id');
+        const newId = id.replace(new RegExp('_' + oldIndex + '(_|$)'), '_' + newIndex + '$1');
+        $(this).attr('id', newId);
+    });
+
+    // Rename every <label for="..."> to match its input's new id
+    template.find('[for]').each(function () {
+        const forAttr = $(this).attr('for');
+        const newFor = forAttr.replace(new RegExp('_' + oldIndex + '(_|$)'), '_' + newIndex + '$1');
+        $(this).attr('for', newFor);
+    });
+
+    // Rename every data-target so yes/no toggles point at the correctly-renamed row container
+    template.find('[data-target]').each(function () {
+        const dt = $(this).data('target');
+        const newDt = dt.replace(new RegExp('_' + oldIndex + '(_|$)'), '_' + newIndex + '$1');
+        $(this).attr('data-target', newDt);
+    });
+
+    // Rename every name="posting_rows[0][...]" to posting_rows[newIndex][...]
+    template.find('[name]').each(function () {
+        const name = $(this).attr('name');
+        if (!name) return;
+        const newName = name.replace(/posting_rows\[\d+\]/, 'posting_rows[' + newIndex + ']');
+        $(this).attr('name', newName);
+
+        if ($(this).attr('type') === 'radio') {
+            $(this).prop('checked', $(this).val() === 'no');
+        } else {
+            $(this).val('');
+        }
+    });
+
+    // Reset all yes/no toggles inside the clone to "No" and hide their row blocks
+    template.find('.yes-no-toggle[value="no"]').prop('checked', true);
+    template.find('.yes-no-toggle[value="yes"]').prop('checked', false);
+    template.find('[id^="principal_incharge_"], [id^="deputation_"]').each(function () {
+        $(this).hide();
+    });
+
+    // Keep only the first row inside each nested dynamic section, reset its values
+    template.find('.dynamic-rows-container').each(function () {
+        $(this).find('.dynamic-row').slice(1).remove();
+        $(this).find('.dynamic-row input').val('');
+        $(this).find('.dynamic-row .remove-dynamic-row').hide();
+        $(this).siblings('.add-more-btn').show();
+    });
+
+    template.attr('data-posting-index', newIndex);
+    template.find('.remove-posting-history-block').show();
+
+    container.prepend(template);
+
+    if (container.find('.posting-history-block').length >= maxBlocks) {
+        $('#addPostingHistoryBtn').hide();
+    }
+});
+</script>
+
+{{-- showing preview for add employee and edit employee page --}}
+<script>
+    $(function () {
+
+    // ---- Live photo preview ----
+    const photoInput = document.getElementById('photoInput');
+    const photoPreview = document.getElementById('photoPreview');
+
+    photoInput.addEventListener('change', function () {
+        const file = this.files[0];
+        if (!file) return;
+
+        if (photoPreview.dataset.blob === 'true') {
+            URL.revokeObjectURL(photoPreview.src);
+        }
+
+        photoPreview.src = URL.createObjectURL(file);
+        photoPreview.dataset.blob = 'true';
+        photoPreview.style.display = 'inline-block';
+    });
+
+    // ---- Cascading State → District → Sub Division → Block ----
+
+    // Preserve existing values for Edit page (blank strings on Add page)
+    const existingState       = @json(old('state', $employee->state ?? ''));
+    const existingDistrict    = @json(old('district', $employee->district ?? ''));
+    const existingSubDivision = @json(old('sub_division', $employee->sub_division ?? ''));
+    const existingBlock       = @json(old('block_municipality', $employee->block_municipality ?? ''));
+
+    function loadStates() {
+        $.getJSON('{{ url("admin/dashboard/employee/getStates") }}', function (states) {
+            const $select = $('#stateSelect');
+            $select.empty().append('<option value="">-- Select --</option>');
+            states.forEach(s => {
+                $select.append(`<option value="${s.name}" data-id="${s.id}" ${s.name === existingState ? 'selected' : ''}>${s.name}</option>`);
+            });
+            if (existingState) {
+                loadDistricts($select.find('option:selected').data('id'), existingDistrict);
+            }
+        });
+    }
+
+    function loadDistricts(stateId, preselect = '') {
+        $.getJSON('{{ url("admin/dashboard/employee/getDistricts") }}/' + stateId, function (districts) {
+            const $select = $('#districtSelect');
+            $select.empty().append('<option value="">-- Select --</option>');
+            districts.forEach(d => {
+                $select.append(`<option value="${d.name}" data-id="${d.id}" ${d.name === preselect ? 'selected' : ''}>${d.name}</option>`);
+            });
+            if (preselect) {
+                loadSubDivisions($select.find('option:selected').data('id'), existingSubDivision);
+            }
+        });
+    }
+
+    function loadSubDivisions(districtId, preselect = '') {
+        $.getJSON('{{ url("admin/dashboard/employee/getSubDivisions") }}/' + districtId, function (subs) {
+            const $select = $('#subDivisionSelect');
+            $select.empty().append('<option value="">-- Select --</option>');
+            subs.forEach(sd => {
+                $select.append(`<option value="${sd.name}" data-id="${sd.id}" ${sd.name === preselect ? 'selected' : ''}>${sd.name}</option>`);
+            });
+            if (preselect) {
+                loadBlocks($select.find('option:selected').data('id'), existingBlock);
+            }
+        });
+    }
+
+    function loadBlocks(subDivisionId, preselect = '') {
+        $.getJSON('{{ url("admin/dashboard/employee/getBlocks") }}/' + subDivisionId, function (blocks) {
+            const $select = $('#blockSelect');
+            $select.empty().append('<option value="">-- Select --</option>');
+            blocks.forEach(b => {
+                $select.append(`<option value="${b.name}" ${b.name === preselect ? 'selected' : ''}>${b.name}</option>`);
+            });
+        });
+    }
+
+    $('#stateSelect').on('change', function () {
+        const stateId = $(this).find('option:selected').data('id');
+        $('#districtSelect').empty().append('<option value="">-- Select --</option>');
+        $('#subDivisionSelect').empty().append('<option value="">-- Select District First --</option>');
+        $('#blockSelect').empty().append('<option value="">-- Select Sub Division First --</option>');
+        if (stateId) loadDistricts(stateId);
+    });
+
+    $('#districtSelect').on('change', function () {
+        const districtId = $(this).find('option:selected').data('id');
+        $('#subDivisionSelect').empty().append('<option value="">-- Select --</option>');
+        $('#blockSelect').empty().append('<option value="">-- Select Sub Division First --</option>');
+        if (districtId) loadSubDivisions(districtId);
+    });
+
+    $('#subDivisionSelect').on('change', function () {
+        const subDivisionId = $(this).find('option:selected').data('id');
+        $('#blockSelect').empty().append('<option value="">-- Select --</option>');
+        if (subDivisionId) loadBlocks(subDivisionId);
+    });
+
+    loadStates();
+});
+</script>
+
+
+
+
+{{-- add employee form work to show add more input box above existing input box --}}
+<script>
+    $(function () {
+    $('.yes-no-toggle').on('change', function () {
+        const target = $(this).data('target');
+        if ($(this).val() === 'yes') { $('#' + target).slideDown(); } else { $('#' + target).slideUp(); }
+    });
+
+    // Re-index every row's name="rowsName[i][field]" based on CURRENT visual (top-to-bottom) order.
+    // Row at the top is always [0] — treated as "current/latest" entry.
+    function reindexRows(container) {
+        container.find('.dynamic-row').each(function (visualIndex) {
+            $(this).find('input').each(function () {
+                const oldName = $(this).attr('name');
+                const newName = oldName.replace(/\[\d+\]/, '[' + visualIndex + ']');
+                $(this).attr('name', newName);
+            });
+        });
+    }
+
+    $('.add-more-btn').on('click', function () {
+        const section = $(this).data('section');
+        const container = $('.dynamic-rows-container[data-section="' + section + '"]');
+        const rows = container.find('.dynamic-row');
+        const maxRows = parseInt(container.data('max'), 10);
+        if (rows.length >= maxRows) return;
+
+        // Clone the structure (field layout) from the first row, but always insert it EMPTY at the TOP
+        const template = rows.first().clone();
+        template.find('input').val('');
+        template.find('.remove-dynamic-row').show();
+
+        container.prepend(template); // <-- new row goes ABOVE existing (filled) rows
+
+        reindexRows(container); // re-number every row's name attributes to match new top-to-bottom order
+
+        if (container.find('.dynamic-row').length >= maxRows) { $(this).hide(); }
+    });
+
+    $(document).on('click', '.remove-dynamic-row', function () {
+        const row = $(this).closest('.dynamic-row');
+        const container = row.closest('.dynamic-rows-container');
+        const section = container.data('section');
+        row.remove();
+
+        reindexRows(container); // keep indices contiguous (0,1,2...) after a removal too
+
+        const maxRows = parseInt(container.data('max'), 10);
+        if (container.find('.dynamic-row').length < maxRows) {
+            $('.add-more-btn[data-section="' + section + '"]').show();
+        }
+    });
+});
+</script>
+
+
+<script>
+    $(function () {
     $('.delete-file-btn').on('click', function () {
         if (!confirm('Remove this file?')) return;
         const id = $(this).data('id');
@@ -60,7 +295,7 @@ $(function () {
 
 {{-- approve/reject/revert for News and event or notice and announcement --}}
 <script>
-$(function () {
+    $(function () {
     const itemId = $('#itemCard').data('item-id');
     function post(url, data, cb) {
         $.ajax({
@@ -76,10 +311,89 @@ $(function () {
 });
 </script>
 
+{{-- edit work with multiple files --}}
+<script>
+    $(function () {
+
+    $('#toggleExistingFilesBtn').on('click', function () {
+        $('#existingFilesList').slideToggle();
+    });
+
+    // Reveal the replace-input only for the specific file clicked
+    $('.edit-file-toggle').on('click', function () {
+        const targetId = $(this).data('target');
+        $('#' + targetId).slideToggle();
+    });
+
+    $('.delete-file-btn').on('click', function () {
+        if (!confirm('Remove this file?')) return;
+
+        const id = $(this).data('id');
+        const form = $('<form>', {
+            method: 'POST',
+            action: '{{ url("admin/dashboard/newsEvent/deleteFile") }}/' + id
+        });
+        form.append('<input type="hidden" name="_token" value="{{ csrf_token() }}">');
+        form.append('<input type="hidden" name="_method" value="DELETE">');
+        $('body').append(form);
+        form.submit();
+    });
+
+    $('#addMoreFileBtn').on('click', function () {
+        const newRow = $('<div class="input-group mb-2 file-input-row">' +
+            '<input type="file" name="files[]" class="form-control">' +
+            '<button type="button" class="btn btn-outline-danger remove-file-row">Remove</button>' +
+            '</div>');
+
+        $('#fileInputsContainer').append(newRow);
+    });
+
+    $(document).on('click', '.remove-file-row', function () {
+        $(this).closest('.file-input-row').remove();
+    });
+
+});
+</script>
+
+{{-- Add multiple files in multiple input box for notice and news section --}}
+<script>
+    $(function () {
+
+    // Add a new file input row
+    $('#addMoreFileBtn').on('click', function () {
+        const newRow = $('<div class="input-group mb-2 file-input-row">' +
+            '<input type="file" name="files[]" class="form-control">' +
+            '<button type="button" class="btn btn-outline-danger remove-file-row">Remove</button>' +
+            '</div>');
+
+        $('#fileInputsContainer').append(newRow);
+        updateRemoveButtonsVisibility();
+    });
+
+    // Remove a specific file input row
+    $(document).on('click', '.remove-file-row', function () {
+        $(this).closest('.file-input-row').remove();
+        updateRemoveButtonsVisibility();
+    });
+
+    // Show "Remove" only when there is more than one row
+    function updateRemoveButtonsVisibility() {
+        const rows = $('.file-input-row');
+        if (rows.length > 1) {
+            rows.find('.remove-file-row').show();
+        } else {
+            rows.find('.remove-file-row').hide();
+        }
+    }
+
+    updateRemoveButtonsVisibility();
+});
+</script>
+
 
 {{-- forward News and event or notice and announcement --}}
 <script>
-$(function () {
+    $(function () {
     $('.forward-btn').on('click', function () {
         const id = $(this).data('id');
         $.ajax({
@@ -98,7 +412,7 @@ $(function () {
 
 {{-- forward about page verification to principle --}}
 <script>
-$(function () {
+    $(function () {
     $('.forward-btn').on('click', function () {
         const id = $(this).data('id');
         $.ajax({
@@ -129,7 +443,7 @@ $(function () {
 
 {{-- approve/reject/revert the About PAGE --}}
 <script>
-$(function () {
+    $(function () {
     const pageId = $('#pageCard').data('page-id');
 
     function post(url, data, cb) {
@@ -239,9 +553,9 @@ $(function () {
 });
 </script>
 
-{{-- in change password matching in new password and confirm new password  --}}
+{{-- in change password matching in new password and confirm new password --}}
 <script>
-$(function () {
+    $(function () {
 
     // Live match check between New Password and Confirm Password
     function checkMatch() {
@@ -310,9 +624,9 @@ $(function () {
 });
 </script>
 
-{{-- image preview for banner and principle image uploaded by operator  --}}
+{{-- image preview for banner and principle image uploaded by operator --}}
 <script>
-$(document).ready(function () {
+    $(document).ready(function () {
 
     function previewImage(inputId, thumbId) {
         $('#' + inputId).on('change', function (e) {
@@ -378,9 +692,9 @@ $(document).ready(function () {
 });
 </script>
 
-{{--in editCollegePage image preview for banner and principle image uploaded by operator change in realtime  --}}
+{{--in editCollegePage image preview for banner and principle image uploaded by operator change in realtime --}}
 <script>
-document.addEventListener('DOMContentLoaded', function () {
+    document.addEventListener('DOMContentLoaded', function () {
     function setupPreview(inputId, previewId) {
         const input = document.getElementById(inputId);
         const preview = document.getElementById(previewId);
